@@ -6,13 +6,13 @@ import {
 	Circle,
 	MetricsContainer,
 } from './style';
-import { useSelector } from 'react-redux';
+import {useSelector} from 'react-redux';
 import {
 	selectStats,
 	responseTimes,
 	cacheLatencies,
 } from '../storeRedux/dashboardSlice';
-import { Line, Pie } from 'react-chartjs-2';
+import {Line, Pie} from 'react-chartjs-2';
 import {
 	Chart as ChartJS,
 	CategoryScale,
