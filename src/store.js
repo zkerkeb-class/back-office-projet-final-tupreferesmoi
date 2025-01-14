@@ -1,4 +1,4 @@
-import { configureStore } from '@reduxjs/toolkit';
+import {configureStore} from '@reduxjs/toolkit';
 import dashboardReducer from './storeRedux/dashboardSlice'; // Chemin vers ton slice
 
 const store = configureStore({
