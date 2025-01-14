@@ -12,7 +12,7 @@
 		"plugin:import/errors",
 		"plugin:import/warnings",
 		"plugin:testing-library/react",
-		"plugin:prettier/recommended",
+		"prettier",
 		"chartjs"
 	],
 	"parserOptions": {
@@ -22,18 +22,12 @@
 		"ecmaVersion": 2021,
 		"sourceType": "module"
 	},
-	"plugins": ["react", "jsx-a11y", "import"],
+	"plugins": ["react", "jsx-a11y", "import", "prettier"],
 	"rules": {
 		"react/prop-types": "off",
 		"no-console": "warn",
 		"strict": ["error", "global"],
-		"react/react-in-jsx-scope": "off",
-		"prettier/prettier": [
-			"error",
-			{
-				"endOfLine": "auto"
-			}
-		]
+		"react/react-in-jsx-scope": "off"
 	},
 	"settings": {
 		"react": {
