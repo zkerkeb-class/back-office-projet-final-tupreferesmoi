@@ -1,10 +1,12 @@
 import React from 'react';
+import {Link} from 'react-router-dom';
 import {
 	DashboardContainer,
 	Card,
 	Curve,
-	Circle,
+	KPI,
 	MetricsContainer,
+	DashboardTop,
 } from './style';
 import {useSelector} from 'react-redux';
 import {
@@ -12,7 +14,7 @@ import {
 	responseTimes,
 	cacheLatencies,
 } from '../storeRedux/dashboardSlice';
-import {Line, Pie} from 'react-chartjs-2';
+import {Line, Pie, Doughnut} from 'react-chartjs-2';
 import {
 	Chart as ChartJS,
 	CategoryScale,
@@ -127,10 +129,23 @@ export default function Dashboard() {
 		},
 	};
 
-	// Add DashboardTop
+	const optionsGauge = {
+		responsive: true,
+		plugins: {
+			legend: {
+				display: false,
+			},
+		},
+		rotation: 270,
+		circumference: 180,
+	};
+
 	return (
 		<DashboardContainer>
-			<h1>Dashboard</h1>
+			<DashboardTop>
+				<h1>Dashboard</h1>
+				<Link to="/config">⚙️ Configure KPIs</Link>
+			</DashboardTop>
 			<Card>
 				<h2>System performance metrics</h2>
 				<Curve>
@@ -142,21 +157,21 @@ export default function Dashboard() {
 				<MetricsContainer>
 					<div className="metric-item">
 						<p>CPU : {cpuUsage}%</p>
-						<Circle>
-							<Pie data={dataCpu} options={optionsCircle} />
-						</Circle>
+						<KPI>
+							<Doughnut data={dataCpu} options={optionsGauge} />
+						</KPI>
 					</div>
 					<div className="metric-item">
 						<p>Memory : {memoryUsage}%</p>
-						<Circle>
+						<KPI>
 							<Pie data={dataMemory} options={optionsCircle} />
-						</Circle>
+						</KPI>
 					</div>
 					<div className="metric-item">
 						<p>Disk : {diskUsage}%</p>
-						<Circle>
+						<KPI>
 							<Pie data={dataDisk} options={optionsCircle} />
-						</Circle>
+						</KPI>
 					</div>
 				</MetricsContainer>
 				<p>Bandwith usage : {stats.bandwithUsage}Gbps</p>
@@ -173,9 +188,9 @@ export default function Dashboard() {
 				<MetricsContainer>
 					<div className="metric-item">
 						<p>Success rate : {successRate}%</p>
-						<Circle>
+						<KPI>
 							<Pie data={successFailureRates} options={optionsCircle} />
-						</Circle>
+						</KPI>
 					</div>
 				</MetricsContainer>
 			</Card>

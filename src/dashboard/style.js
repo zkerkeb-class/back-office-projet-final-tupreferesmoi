@@ -1,10 +1,16 @@
 import style from 'styled-components';
 
-export const DashboardContainer = style.div`
-    display: flex;
-    flex-direction: column;
-    padding: 2rem;
+/*
+export const Link = style.div`
+    text-decoration: none;
+    color: black;
+    cursor: pointer;
+
+    &:hover {
+        text-decoration: underline;
+    }
 `;
+*/
 
 export const Card = style.div`
     background: #f9f9f9;
@@ -20,11 +26,17 @@ export const Curve = style.div`
     padding-bottom: 3rem;
 `;
 
-export const Circle = style.div`
+export const KPI = style.div`
     height: 10em;
     display: flex;
     justify-content: center;
     align-items: center;
+`;
+
+export const DashboardContainer = style.div`
+    display: flex;
+    flex-direction: column;
+    padding: 2rem;
 `;
 
 export const MetricsContainer = style.div`
@@ -48,6 +60,7 @@ export const MetricItem = style.div`
 export const DashboardTop = style.div`
     display: flex;
     gap: 2rem;
-    justify-content: center;
+    justify-content: left;
     margin-top: 1rem;
+    align-items: center;
 `;
