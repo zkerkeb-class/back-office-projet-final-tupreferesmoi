@@ -1,24 +1,24 @@
 import {createSlice} from '@reduxjs/toolkit';
 import {initializeKpiConfig} from '../utils/cookies';
 
-const initialState = () => {
-	const kpiConfig = initializeKpiConfig();
-	return {
-		stats: {
-			apiTimeResponse: 200,
-			cpuUsage: 40,
-			memoryUsage: 40,
-			diskUsage: 40,
-			redisCacheLatency: 50,
-			bandwithUsage: 10,
-			streamNumber: 100,
-			activeUsersNumber: 1000,
-			usedStorage: 20.3,
-			successRate: 75,
-			mediaTreatmentTime: 100,
-		},
-		kpiConfig,
-	};
+const kpiConfig = initializeKpiConfig();
+
+const initialState = {
+	stats: {
+		apiTimeResponse: 200,
+		cpuUsage: 40,
+		memoryUsage: 40,
+		diskUsage: 40,
+		redisCacheLatency: 50,
+		bandwithUsage: 10,
+		streamNumber: 100,
+		activeUsersNumber: 1000,
+		usedStorage: 20.3,
+		totalStorage: 1000,
+		successRate: 75,
+		mediaTreatmentTime: 100,
+	},
+	kpiConfig,
 };
 
 const dashboardSlice = createSlice({

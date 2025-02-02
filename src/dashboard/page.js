@@ -1,4 +1,5 @@
 import React from 'react';
+import {useEffect, useState} from 'react';
 import {Link} from 'react-router-dom';
 import {
 	DashboardContainer,
@@ -8,13 +9,15 @@ import {
 	MetricsContainer,
 	DashboardTop,
 } from './style';
-import {useSelector} from 'react-redux';
+import {useSelector, useDispatch} from 'react-redux';
 import {
 	selectStats,
+	selectKpiConfig,
 	responseTimes,
 	cacheLatencies,
+	updateKpiConfig,
 } from '../storeRedux/dashboardSlice';
-import {Line, Pie, Doughnut} from 'react-chartjs-2';
+import {Line} from 'react-chartjs-2';
 import {
 	Chart as ChartJS,
 	CategoryScale,
@@ -26,6 +29,8 @@ import {
 	Tooltip,
 	Legend,
 } from 'chart.js';
+import {getkpiConfig, saveKpiConfig} from '../utils/cookies';
+import KpiChart from './KpiChart';
 
 // Save necessary Chart.js components
 ChartJS.register(
@@ -39,21 +44,114 @@ ChartJS.register(
 	Legend
 );
 
-export default function Dashboard() {
-	const stats = useSelector(selectStats);
+export function getKpiData(kpiId, stats) {
+	const kpiKeyMap = {
+		cpuUsage: stats.cpuUsage,
+		memoryUsage: stats.memoryUsage,
+		diskUsage: stats.diskUsage,
+		bandwithUsage: stats.bandwithUsage,
+		streams: stats.streamNumber,
+		users: stats.activeUsersNumber,
+		usedStorage: stats.usedStorage,
+		mediaTreatmentTime: stats.mediaTreatmentTime,
+		successRate: stats.successRate,
+	};
 
-	const cpuUsage = stats.cpuUsage || 0;
-	const memoryUsage = stats.memoryUsage || 0;
-	const diskUsage = stats.diskUsage || 0;
+	const statkey = kpiKeyMap[kpiId];
+	if (!statkey) {
+		console.error(`No mapping found for KPI: ${kpiId}`);
+		return {datasets: [{data: [0]}]};
+	}
 
-	const streamNumber = stats.streamNumber || 0;
-	const activeUsersNumber = stats.activeUsersNumber || 0;
-	const usedStorage = stats.usedStorage || 0;
-	const mediaTreatmentTime = stats.mediaTreatmentTime || 0;
-	const successRate = stats.successRate || 0;
+	const value = stats[kpiId] || 0;
 
-	// Chart data
-	const linedata = {
+	console.log(`KPI: ${kpiId} - statkey: ${statkey} - value: ${value}`);
+
+	const templates = {
+		cpuUsage: {
+			labels: ['Usage', 'Free'],
+			datasets: [
+				{
+					data: [value, 100 - value],
+					backgroundColor: ['rgb(75, 192, 192)', 'rgb(211, 211, 211)'],
+					borderColor: ['rgb(75, 192, 192)', 'rgb(211, 211, 211)'],
+				},
+			],
+		},
+		memoryUsage: {
+			labels: ['Usage', 'Free'],
+			datasets: [
+				{
+					data: [value, 100 - value],
+					backgroundColor: ['rgb(255, 99, 132)', 'rgb(211, 211, 211)'],
+					borderColor: ['rgb(255, 99, 132)', 'rgb(211, 211, 211)'],
+				},
+			],
+		},
+		diskUsage: {
+			labels: ['Usage', 'Free'],
+			datasets: [
+				{
+					data: [value, 100 - value],
+					backgroundColor: ['rgb(54, 162, 235)', 'rgb(211, 211, 211)'],
+					borderColor: ['rgb(54, 162, 235)', 'rgb(211, 211, 211)'],
+				},
+			],
+		},
+		bandwithUsage: {
+			datasets: [
+				{
+					data: [value],
+				},
+			],
+		},
+		streams: {
+			datasets: [
+				{
+					data: [value],
+				},
+			],
+		},
+		users: {
+			datasets: [
+				{
+					data: [value],
+				},
+			],
+		},
+		usedStorage: {
+			datasets: [
+				{
+					data: [value, stats.totalStorage || 0],
+					backgroundColor: ['rgb(54, 162, 235)', 'rgb(211, 211, 211)'],
+					borderColor: ['rgb(54, 162, 235)', 'rgb(211, 211, 211)'],
+				},
+			],
+		},
+		mediaTreatmentTime: {
+			datasets: [
+				{
+					data: [value],
+				},
+			],
+		},
+		successRate: {
+			labels: ['Success', 'Failure'],
+			datasets: [
+				{
+					data: [value, 100 - value],
+					backgroundColor: ['rgb(75, 192, 192)', 'rgb(255, 99, 132)'],
+					borderColor: ['rgb(75, 192, 192)', 'rgb(255, 99, 132)'],
+				},
+			],
+		},
+	};
+
+	return templates[kpiId] || {datasets: [{data: [0]}]};
+}
+
+export function getLineData() {
+	return {
 		labels: ['Request 1', 'Request 2', 'Request 3', 'Request 4', 'Request 5'], // Labels for X axis
 		datasets: [
 			{
@@ -72,73 +170,31 @@ export default function Dashboard() {
 			},
 		],
 	};
+}
 
-	const dataCpu = {
-		labels: ['Usage', 'Free'],
-		datasets: [
-			{
-				data: [cpuUsage, 100 - cpuUsage],
-				backgroundColor: ['rgb(75, 192, 192)', 'rgb(211, 211, 211)'],
-				borderColor: ['rgb(75, 192, 192)', 'rgb(211, 211, 211)'],
-			},
-		],
-	};
+export default function Dashboard() {
+	const dispatch = useDispatch();
+	const stats = useSelector(selectStats);
+	const kpiConfig = useSelector(selectKpiConfig);
+	const [initialized, setInitialized] = useState(false);
 
-	const dataMemory = {
-		labels: ['Usage', 'Free'],
-		datasets: [
-			{
-				data: [memoryUsage, 100 - memoryUsage],
-				backgroundColor: ['rgb(255, 99, 132)', 'rgb(211, 211, 211)'],
-				borderColor: ['rgb(255, 99, 132)', 'rgb(211, 211, 211)'],
-			},
-		],
-	};
+	const linedata = getLineData();
 
-	const dataDisk = {
-		labels: ['Usage', 'Free'],
-		datasets: [
-			{
-				data: [diskUsage, 100 - diskUsage],
-				backgroundColor: ['rgb(54, 162, 235)', 'rgb(211, 211, 211)'],
-				borderColor: ['rgb(54, 162, 235)', 'rgb(211, 211, 211)'],
-			},
-		],
-	};
+	useEffect(() => {
+		const savedKpiConfig = getkpiConfig();
 
-	const successFailureRates = {
-		labels: ['Success', 'Failure'],
-		datasets: [
-			{
-				data: [successRate, 100 - successRate],
-				backgroundColor: ['rgb(75, 192, 192)', 'rgb(255, 99, 132)'],
-				borderColor: ['rgb(75, 192, 192)', 'rgb(255, 99, 132)'],
-			},
-		],
-	};
+		if (!savedKpiConfig) {
+			saveKpiConfig(kpiConfig);
+		} else {
+			dispatch(updateKpiConfig(savedKpiConfig));
+		}
 
-	const optionsCircle = {
-		plugins: {
-			legend: {
-				position: 'right',
-				labels: {
-					boxWidth: 20,
-					padding: 10,
-				},
-			},
-		},
-	};
+		setInitialized(true);
+	}, [dispatch, kpiConfig]);
 
-	const optionsGauge = {
-		responsive: true,
-		plugins: {
-			legend: {
-				display: false,
-			},
-		},
-		rotation: 270,
-		circumference: 180,
-	};
+	if (!initialized) {
+		return <p>Loading...</p>;
+	}
 
 	return (
 		<DashboardContainer>
@@ -153,45 +209,22 @@ export default function Dashboard() {
 					<Line data={linedata} />
 				</Curve>
 
-				<h3>Server ressource usage</h3>
+				<h3>Server ressource usage and business metrics</h3>
 				<MetricsContainer>
-					<div className="metric-item">
-						<p>CPU : {cpuUsage}%</p>
-						<KPI>
-							<Doughnut data={dataCpu} options={optionsGauge} />
-						</KPI>
-					</div>
-					<div className="metric-item">
-						<p>Memory : {memoryUsage}%</p>
-						<KPI>
-							<Pie data={dataMemory} options={optionsCircle} />
-						</KPI>
-					</div>
-					<div className="metric-item">
-						<p>Disk : {diskUsage}%</p>
-						<KPI>
-							<Pie data={dataDisk} options={optionsCircle} />
-						</KPI>
-					</div>
-				</MetricsContainer>
-				<p>Bandwith usage : {stats.bandwithUsage}Gbps</p>
-			</Card>
-
-			<Card>
-				<h2>Business metrics</h2>
-				<MetricsContainer>
-					<p>Streams : {streamNumber} </p>
-					<p>Active users : {activeUsersNumber}</p>
-					<p>Used storage : {usedStorage}Gb</p>
-					<p>Media treatment time : {mediaTreatmentTime}ms</p>
-				</MetricsContainer>
-				<MetricsContainer>
-					<div className="metric-item">
-						<p>Success rate : {successRate}%</p>
-						<KPI>
-							<Pie data={successFailureRates} options={optionsCircle} />
-						</KPI>
-					</div>
+					{Object.values(kpiConfig)
+						.filter((kpi) => kpi.enabled)
+						.sort((a, b) => a.order - b.order)
+						.map((kpi) => {
+							const data = getKpiData(kpi.id, stats);
+							return (
+								<div key={kpi.id} className="metric-item">
+									<p>{kpi.label} :</p>
+									<KPI>
+										<KpiChart kpi={kpi} data={data} />
+									</KPI>
+								</div>
+							);
+						})}
 				</MetricsContainer>
 			</Card>
 		</DashboardContainer>

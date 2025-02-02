@@ -63,9 +63,9 @@ const SortableKpi = ({
 						value={kpi.visualizationType}
 						onChange={(e) => onVisualizationChange(id, e.target.value)}
 					>
-						<option value="graph">Graph</option>
-						<option value="counter">Counter</option>
+						<option value="circle">Pie Chart</option>
 						<option value="gauge">Gauge</option>
+						<option value="text">Text</option>
 					</select>
 				</label>
 			</div>
@@ -92,38 +92,38 @@ export default function KpiConfigurator() {
 	};
 
 	const handleSave = (newConfig) => {
-		dispatch(updateKpiConfig(newConfig));
 		saveKpiConfig(newConfig);
-
-		// Reload page
 		window.location.reload();
 	};
 
 	const resetKpiConfig = () => {
 		document.cookie =
 			'kpiConfig=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-
 		window.location.reload();
 	};
 
 	const handleDragEnd = (event) => {
 		const {active, over} = event;
 
-		if (active.id !== over.id) {
-			const oldIndex = Object.keys(kpiConfig).indexOf(active.id);
-			const newIndex = Object.keys(kpiConfig).indexOf(over.id);
-
-			const reorderedKpis = arrayMove(
-				Object.entries(kpiConfig),
-				oldIndex,
-				newIndex
-			).reduce((acc, [key, value]) => {
-				acc[key] = value;
-				return acc;
-			}, {});
-
-			dispatch(updateKpiConfig(reorderedKpis));
+		if (!over || active.id === over.id) {
+			return;
 		}
+
+		const sortedKpis = Object.values(kpiConfig).sort(
+			(a, b) => a.order - b.order
+		);
+		const oldIndex = sortedKpis.findIndex((kpi) => kpi.id === active.id);
+		const newIndex = sortedKpis.findIndex((kpi) => kpi.id === over.id);
+
+		const reorderedKpis = arrayMove(sortedKpis, oldIndex, newIndex).reduce(
+			(acc, kpi, index) => {
+				acc[kpi.id] = {...kpi, order: index + 1};
+				return acc;
+			},
+			{}
+		);
+
+		dispatch(updateKpiConfig(reorderedKpis));
 	};
 
 	// Modify return by following advice
