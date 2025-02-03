@@ -5,11 +5,9 @@ const kpiConfig = initializeKpiConfig();
 
 const initialState = {
 	stats: {
-		apiTimeResponse: 200,
-		cpuUsage: 40,
+		cpuUsage: 50,
 		memoryUsage: 40,
-		diskUsage: 40,
-		redisCacheLatency: 50,
+		diskUsage: 30,
 		bandwithUsage: 10,
 		streamNumber: 100,
 		activeUsersNumber: 1000,

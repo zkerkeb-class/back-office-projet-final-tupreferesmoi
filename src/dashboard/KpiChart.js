@@ -36,7 +36,7 @@ const KpiChart = ({kpi, data}) => {
 			) : kpi.type === 'gauge' && data ? (
 				<Doughnut data={data} options={optionsGauge} />
 			) : kpi.type === 'text' && data ? (
-				<p></p>
+				<p>{data.datasets[0].data[0]}</p>
 			) : (
 				<p>Unsupported KPI type</p>
 			)}

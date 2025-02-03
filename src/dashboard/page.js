@@ -1,5 +1,4 @@
-import React from 'react';
-import {useEffect, useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {Link} from 'react-router-dom';
 import {
 	DashboardContainer,
@@ -44,35 +43,37 @@ ChartJS.register(
 	Legend
 );
 
-export function getKpiData(kpiId, stats) {
-	const kpiKeyMap = {
-		cpuUsage: stats.cpuUsage,
-		memoryUsage: stats.memoryUsage,
-		diskUsage: stats.diskUsage,
-		bandwithUsage: stats.bandwithUsage,
-		streams: stats.streamNumber,
-		users: stats.activeUsersNumber,
-		usedStorage: stats.usedStorage,
-		mediaTreatmentTime: stats.mediaTreatmentTime,
-		successRate: stats.successRate,
-	};
-
-	const statkey = kpiKeyMap[kpiId];
-	if (!statkey) {
-		console.error(`No mapping found for KPI: ${kpiId}`);
+export function getKpiData(kpi, stats) {
+	if (!kpi || !stats) {
+		console.error('Invalid KPI or stats object');
 		return {datasets: [{data: [0]}]};
 	}
 
-	const value = stats[kpiId] || 0;
+	const statKeyMap = {
+		1: 'cpuUsage',
+		2: 'memoryUsage',
+		3: 'diskUsage',
+		4: 'bandwithUsage',
+		5: 'streamNumber',
+		6: 'activeUsersNumber',
+		7: 'usedStorage',
+		8: 'mediaTreatmentTime',
+		9: 'successRate',
+	};
 
-	console.log(`KPI: ${kpiId} - statkey: ${statkey} - value: ${value}`);
+	const statKey = statKeyMap[kpi.id];
+
+	if (!statKey || stats[statKey] === undefined) {
+		console.error(`No mapping found for KPI: ${kpi.id}`);
+		return {datasets: [{data: [0]}]};
+	}
 
 	const templates = {
 		cpuUsage: {
 			labels: ['Usage', 'Free'],
 			datasets: [
 				{
-					data: [value, 100 - value],
+					data: [stats.cpuUsage, 100 - stats.cpuUsage],
 					backgroundColor: ['rgb(75, 192, 192)', 'rgb(211, 211, 211)'],
 					borderColor: ['rgb(75, 192, 192)', 'rgb(211, 211, 211)'],
 				},
@@ -82,7 +83,7 @@ export function getKpiData(kpiId, stats) {
 			labels: ['Usage', 'Free'],
 			datasets: [
 				{
-					data: [value, 100 - value],
+					data: [stats.memoryUsage, 100 - stats.memoryUsage],
 					backgroundColor: ['rgb(255, 99, 132)', 'rgb(211, 211, 211)'],
 					borderColor: ['rgb(255, 99, 132)', 'rgb(211, 211, 211)'],
 				},
@@ -92,7 +93,7 @@ export function getKpiData(kpiId, stats) {
 			labels: ['Usage', 'Free'],
 			datasets: [
 				{
-					data: [value, 100 - value],
+					data: [stats.diskUsage, 100 - stats.diskUsage],
 					backgroundColor: ['rgb(54, 162, 235)', 'rgb(211, 211, 211)'],
 					borderColor: ['rgb(54, 162, 235)', 'rgb(211, 211, 211)'],
 				},
@@ -101,28 +102,28 @@ export function getKpiData(kpiId, stats) {
 		bandwithUsage: {
 			datasets: [
 				{
-					data: [value],
+					data: [stats.bandwithUsage],
 				},
 			],
 		},
 		streams: {
 			datasets: [
 				{
-					data: [value],
+					data: [stats.streamNumber],
 				},
 			],
 		},
 		users: {
 			datasets: [
 				{
-					data: [value],
+					data: [stats.activeUsersNumber],
 				},
 			],
 		},
 		usedStorage: {
 			datasets: [
 				{
-					data: [value, stats.totalStorage || 0],
+					data: [stats.usedStorage, stats.totalStorage || 0],
 					backgroundColor: ['rgb(54, 162, 235)', 'rgb(211, 211, 211)'],
 					borderColor: ['rgb(54, 162, 235)', 'rgb(211, 211, 211)'],
 				},
@@ -131,7 +132,7 @@ export function getKpiData(kpiId, stats) {
 		mediaTreatmentTime: {
 			datasets: [
 				{
-					data: [value],
+					data: [stats.mediaTreatmentTime],
 				},
 			],
 		},
@@ -139,7 +140,7 @@ export function getKpiData(kpiId, stats) {
 			labels: ['Success', 'Failure'],
 			datasets: [
 				{
-					data: [value, 100 - value],
+					data: [stats.successRate, 100 - stats.successRate],
 					backgroundColor: ['rgb(75, 192, 192)', 'rgb(255, 99, 132)'],
 					borderColor: ['rgb(75, 192, 192)', 'rgb(255, 99, 132)'],
 				},
@@ -147,7 +148,7 @@ export function getKpiData(kpiId, stats) {
 		},
 	};
 
-	return templates[kpiId] || {datasets: [{data: [0]}]};
+	return templates[statKey] || {datasets: [{data: [0]}]};
 }
 
 export function getLineData() {
@@ -215,7 +216,7 @@ export default function Dashboard() {
 						.filter((kpi) => kpi.enabled)
 						.sort((a, b) => a.order - b.order)
 						.map((kpi) => {
-							const data = getKpiData(kpi.id, stats);
+							const data = getKpiData(kpi, stats);
 							return (
 								<div key={kpi.id} className="metric-item">
 									<p>{kpi.label} :</p>
