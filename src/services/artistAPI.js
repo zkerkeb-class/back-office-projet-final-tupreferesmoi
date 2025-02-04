@@ -42,7 +42,7 @@ export const artistApi = {
 
 	createArtist: async (artistData) => {
 		try {
-			const response = await fetch('/artists', {
+			const response = await fetch('${BASE_URL}/artists', {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
@@ -58,7 +58,7 @@ export const artistApi = {
 
 	updateArtist: async (artistData) => {
 		try {
-			const response = await fetch(`/artists/${artistData.id}`, {
+			const response = await fetch(`${BASE_URL}/artists/${artistData.id}`, {
 				method: 'PUT',
 				headers: {
 					'Content-Type': 'application/json',
@@ -74,7 +74,7 @@ export const artistApi = {
 
 	deleteArtist: async (artistId) => {
 		try {
-			const response = await fetch(`/artists/${artistId}`, {
+			const response = await fetch(`${BASE_URL}/artists/${artistId}`, {
 				method: 'DELETE',
 			});
 
