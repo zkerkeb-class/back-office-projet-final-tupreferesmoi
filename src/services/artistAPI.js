@@ -3,7 +3,7 @@ const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 const handleResponse = async (response) => {
 	if (!response.ok) {
 		const error = await response.json();
-		throw new Error(error.message || 'An error occured');
+		throw new Error(error.message || 'An error occurred');
 	}
 	return response.json();
 };
@@ -42,7 +42,7 @@ export const artistApi = {
 
 	createArtist: async (artistData) => {
 		try {
-			const response = await fetch('${BASE_URL}/artists', {
+			const response = await fetch(`${BASE_URL}/artists`, {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
