@@ -12,6 +12,7 @@
 		"@testing-library/user-event": "^13.5.0",
 		"chart.js": "^4.4.7",
 		"chartjs-gauge": "^0.3.0",
+		"dotenv": "^16.4.7",
 		"eslint-plugin-testing-library": "^6.5.0",
 		"husky": "^9.1.7",
 		"jest": "^27.5.1",
