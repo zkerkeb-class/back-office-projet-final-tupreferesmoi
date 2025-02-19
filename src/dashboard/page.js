@@ -1,5 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import {Link} from 'react-router-dom';
+import {ArtistManagement} from '../components/artist';
 import {
 	DashboardContainer,
 	Card,
@@ -228,6 +229,7 @@ export default function Dashboard() {
 						})}
 				</MetricsContainer>
 			</Card>
+			<ArtistManagement></ArtistManagement>
 		</DashboardContainer>
 	);
 }
