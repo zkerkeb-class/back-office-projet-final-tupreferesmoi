@@ -2,12 +2,13 @@ import {useEffect, useState} from 'react';
 import {artistApi} from '../app/api/artistApi';
 
 export const ArtistManagement = () => {
-	const [artists, setArtists] = useState([]);
+	const [artists, setArtists] = useState([{id: 0}]);
 
+	console.log(artists);
 	useEffect(() => {
 		const fetchArtists = async () => {
-			const data = await artistApi.getAllArtists();
-			setArtists(data);
+			const response = await artistApi.getAllArtists();
+			setArtists(response.data);
 		};
 		fetchArtists();
 	}, []);
