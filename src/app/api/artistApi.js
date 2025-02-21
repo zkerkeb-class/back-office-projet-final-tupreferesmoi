@@ -9,6 +9,23 @@ const handleResponse = async (response) => {
 	return response.json();
 };
 
+// Fonction utilitaire pour les requêtes avec authentification
+const fetchWithAuth = async (endpoint, options = {}) => {
+	const token = localStorage.getItem('token');
+	const headers = {
+		'Content-Type': 'application/json',
+		...(token && {Authorization: `Bearer ${token}`}),
+		...options.headers,
+	};
+
+	const response = await fetch(`${BASE_URL}${endpoint}`, {
+		...options,
+		headers,
+	});
+
+	return handleResponse(response);
+};
+
 export const artistApi = {
 	// Récupération de tous les artistes avec pagination
 	getAllArtists: async (page = 1, limit = 10) => {
@@ -39,12 +56,6 @@ export const artistApi = {
 		}
 	},
 
-	// Récupération d'une piste spécifique
-	getTrack: async (trackId) => {
-		const response = await fetch(`${BASE_URL}/tracks/${trackId}`);
-		return handleResponse(response);
-	},
-
 	// Récupération d'un artiste
 	getArtist: async (artistId) => {
 		const response = await fetch(`${BASE_URL}/artists/${artistId}`);
@@ -52,8 +63,29 @@ export const artistApi = {
 	},
 
 	createArtist: async (artistData) => {
-		const response = await fetch(`${BASE_URL}/artists`, artistData);
+		debugger;
+		const response = await fetchWithAuth('/artists', {
+			method: 'POST',
+			body: artistData,
+		});
 		console.log(response.data);
+		return response.data;
+	},
+
+	// Mettre à jour un utilisateur existant
+	updateArtist: async (id, artistData) => {
+		const response = await fetchWithAuth(`/artists/${id}`, {
+			method: 'PUT',
+			body: artistData,
+		});
+		return response.data;
+	},
+
+	// Supprimer un utilisateur
+	deleteArtist: async (id) => {
+		const response = await fetchWithAuth(`/artists/${id}`, {
+			method: 'DELETE',
+		});
 		return response.data;
 	},
 };
@@ -77,14 +109,8 @@ export const artistApi = {
 //   return response.data;
 // };
 
-// // Mettre à jour un utilisateur existant
-// export const updateArtist = async (id, artistData) => {
-//   const response = await fetch(`/artists/${id}`, artistData);
-//   return response.data;
-// };
-
-// // Supprimer un utilisateur
-// export const deleteArtist = async (id) => {
-//   const response = await fetch(`/artists/${id}`);
-//   return response.data;
-// };
+// Supprimer un utilisateur
+export const deleteArtist = async (id) => {
+	const response = await fetch(`/artists/${id}`);
+	return response.data;
+};

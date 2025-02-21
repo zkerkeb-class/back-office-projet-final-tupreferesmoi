@@ -200,7 +200,7 @@ export default function Dashboard() {
 
 	return (
 		<DashboardContainer>
-			<DashboardTop>
+			{/* <DashboardTop>
 				<h1>Dashboard</h1>
 				<Link to="/config">⚙️ Configure KPIs</Link>
 			</DashboardTop>
@@ -228,7 +228,7 @@ export default function Dashboard() {
 							);
 						})}
 				</MetricsContainer>
-			</Card>
+			</Card> */}
 			<ArtistManagement></ArtistManagement>
 		</DashboardContainer>
 	);

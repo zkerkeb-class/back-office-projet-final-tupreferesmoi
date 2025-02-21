@@ -1,10 +1,11 @@
 import {useEffect, useState} from 'react';
 import {artistApi} from '../app/api/artistApi';
+import authService from '../services/authService';
 
 export const ArtistManagement = () => {
-	const [artists, setArtists] = useState([{id: 0}]);
+	const [artists, setArtists] = useState([]);
 
-	console.log(artists);
+	//console.log(artists);
 	useEffect(() => {
 		const fetchArtists = async () => {
 			const response = await artistApi.getAllArtists();
@@ -18,18 +19,26 @@ export const ArtistManagement = () => {
 			name: 'Edouard le plus beau',
 			createdAt: Date.now(),
 
-			genres: ['Drill', 'Kawai'],
+			genres: ['Drill', 'Kawaï'],
 			image: null, // insertion de 3 taille d'images ,
 			popularity: 0,
 			updatedAt: Date.now(),
 		};
-		const createdArtist = await artistApi.createArtist(newArtist);
+
+		const createdArtist = await artistApi.createArtist(
+			JSON.stringify(newArtist)
+		);
 		setArtists([...artists, createdArtist]);
 	};
 
 	const handleUpdateArtist = async (id) => {
-		const updatedArtist = {name: 'Updated Name'};
-		await updateArtist(id, updatedArtist);
+		const updatedArtist = {
+			name: 'Edoudou',
+			genres: ['Kawaï2', 'J-POP'],
+			popularity: 5,
+		};
+
+		await artistApi.updateArtist(id, JSON.stringify(updatedArtist));
 		setArtists(
 			artists.map((artist) =>
 				artist.id === id ? {...artist, ...updatedArtist} : artist
@@ -38,18 +47,26 @@ export const ArtistManagement = () => {
 	};
 
 	const handleDeleteArtist = async (id) => {
-		await deleteArtist(id);
+		console.log(id);
+		await artistApi.deleteArtist(id);
 		setArtists(artists.filter((artist) => artist.id !== id));
 	};
 
 	return (
 		<div>
 			<h2>Gestion des Artiste</h2>
-			<button onClick={handleCreateArtist}>Créer un artiste</button>
+			<button
+				onClick={() => {
+					handleUpdateArtist('67b88136f811643bf2c54bb4');
+				}}
+			>
+				Créer un artiste
+			</button>
 			<ul>
 				{artists.map((artist) => (
-					<li key={artist.id}>
-						{artist.name} - {artist.email}
+					<li id={artist.id} key={artist.id}>
+						{artist.name} - {artist.genres[0]}
+						<br></br>
 						<button onClick={() => handleUpdateArtist(artist.id)}>
 							Modifier
 						</button>
