@@ -109,8 +109,8 @@ export const artistApi = {
 //   return response.data;
 // };
 
-// Supprimer un utilisateur
-export const deleteArtist = async (id) => {
-	const response = await fetch(`/artists/${id}`);
-	return response.data;
-};
+// // Supprimer un utilisateur
+// export const deleteArtist = async (id) => {
+// 	const response = await fetch(`/artists/${id}`);
+// 	return response.data;
+// };

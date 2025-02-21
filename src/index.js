@@ -16,6 +16,8 @@ root.render(
 				<Routes>
 					<Route path="/" element={<Dashboard />} />
 					<Route path="/config" element={<DashboardConfig />} />
+					<Route path="/login" element={<DashboardConfig />} />
+					<Route path="/register" element={<DashboardConfig />} />
 				</Routes>
 			</Router>
 		</Provider>

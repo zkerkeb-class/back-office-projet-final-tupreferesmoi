@@ -1,18 +1,17 @@
 import {useEffect, useState} from 'react';
-import {artistApi} from '../app/api/artistApi';
-import authService from '../services/authService';
+import {artistApi} from '../../app/api/artistApi';
 
 export const ArtistManagement = () => {
 	const [artists, setArtists] = useState([]);
 
 	//console.log(artists);
-	useEffect(() => {
-		const fetchArtists = async () => {
-			const response = await artistApi.getAllArtists();
-			setArtists(response.data);
-		};
-		fetchArtists();
-	}, []);
+	// useEffect(() => {
+	// 	const fetchArtists = async () => {
+	// 		const response = await artistApi.getAllArtists();
+	// 		setArtists(response.data);
+	// 	};
+	// 	fetchArtists();
+	// }, []);
 
 	const handleCreateArtist = async () => {
 		const newArtist = {

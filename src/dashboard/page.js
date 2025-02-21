@@ -1,6 +1,7 @@
 import React, {useEffect, useState} from 'react';
 import {Link} from 'react-router-dom';
-import {ArtistManagement} from '../components/artist';
+import {ArtistManagement} from '../components/artist/artist';
+import ArtistGrid from '../components/artist/artistGrid';
 import {
 	DashboardContainer,
 	Card,
@@ -230,6 +231,7 @@ export default function Dashboard() {
 				</MetricsContainer>
 			</Card> */}
 			<ArtistManagement></ArtistManagement>
+			<ArtistGrid></ArtistGrid>
 		</DashboardContainer>
 	);
 }
