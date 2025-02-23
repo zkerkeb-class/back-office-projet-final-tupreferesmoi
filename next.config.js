@@ -1,5 +1,8 @@
 const nextConfig = {
-	webpack: (config) => {
+	experimental: {
+		disablePostcssPresetEnv: true, // Désactive certaines optimisations qui utilisent gzip-size
+	},
+	webpack: (config, {isServer}) => {
 		config.resolve.fallback = {
 			fs: false,
 			path: false,
