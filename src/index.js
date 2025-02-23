@@ -5,6 +5,8 @@ import {BrowserRouter as Router, Routes, Route} from 'react-router-dom';
 import './index.css';
 import Dashboard from './dashboard/page';
 import DashboardConfig from './dashboard/config/page';
+import ArtistsPage from './artistManagement/page';
+import ManageArtistPage from './artistManagement/manageArtist/page';
 import reportWebVitals from './reportWebVitals';
 import store from './store';
 
@@ -16,6 +18,9 @@ root.render(
 				<Routes>
 					<Route path="/" element={<Dashboard />} />
 					<Route path="/config" element={<DashboardConfig />} />
+					<Route path="/artists" element={<ArtistsPage />} />
+					<Route path="/artists/manage" element={<ManageArtistPage />} />
+					<Route path="/artists/manage/:id" element={<ManageArtistPage />} />
 				</Routes>
 			</Router>
 		</Provider>

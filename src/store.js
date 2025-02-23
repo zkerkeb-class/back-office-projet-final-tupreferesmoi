@@ -1,9 +1,11 @@
 import {configureStore} from '@reduxjs/toolkit';
-import dashboardReducer from './storeRedux/dashboardSlice'; // Chemin vers ton slice
+import dashboardReducer from './storeRedux/dashboardSlice';
+import artistReducer from './storeRedux/artistsSlice';
 
 const store = configureStore({
 	reducer: {
-		dashboard: dashboardReducer, // Connecte le slice au store
+		dashboard: dashboardReducer,
+		artists: artistReducer,
 	},
 });
 

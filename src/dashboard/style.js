@@ -1,17 +1,5 @@
 import style from 'styled-components';
 
-/*
-export const Link = style.div`
-    text-decoration: none;
-    color: black;
-    cursor: pointer;
-
-    &:hover {
-        text-decoration: underline;
-    }
-`;
-*/
-
 export const Card = style.div`
     background: #f9f9f9;
     border: 1px solid #ddd;
