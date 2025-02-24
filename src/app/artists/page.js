@@ -27,7 +27,7 @@ const ArtistsPage = () => {
 		<Container>
 			<Header>
 				<h1>Artists</h1>
-				<NewArtistButton onClick={() => router.push('/artists/manage')}>
+				<NewArtistButton onClick={() => router.push('/artists/manageArtist')}>
 					New Artist
 				</NewArtistButton>
 			</Header>
