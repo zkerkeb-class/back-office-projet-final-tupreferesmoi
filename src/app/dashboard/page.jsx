@@ -1,9 +1,25 @@
+'use client';
+
+import { useAuth } from '../utils/AuthContext';
+import styled from 'styled-components';
+
+const Container = styled.div`
+  padding: 2rem;
+  color: white;
+`;
+
+const Title = styled.h1`
+  font-size: 2rem;
+  margin-bottom: 1rem;
+`;
+
 export default function DashboardPage() {
+  const { user } = useAuth();
+
   return (
-    <div className="space-y-6">
-      <div className="bg-white shadow px-4 py-5 sm:rounded-lg sm:p-6">
-        <h1 className="text-2xl font-bold text-gray-900">Tableau de bord</h1>
-      </div>
-    </div>
+    <Container>
+      <Title>Tableau de bord</Title>
+      <p>Bienvenue, {user?.email}</p>
+    </Container>
   );
 } 

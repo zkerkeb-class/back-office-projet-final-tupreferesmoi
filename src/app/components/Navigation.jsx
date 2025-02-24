@@ -2,6 +2,8 @@
 
 import Link from 'next/link'
 import styled from 'styled-components'
+import { useAuth } from '../utils/AuthContext'
+import { usePathname } from 'next/navigation'
 
 const Nav = styled.nav`
   position: fixed;
@@ -62,7 +64,27 @@ const NavLink = styled(Link)`
   }
 `;
 
+const LogoutButton = styled.button`
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  color: #b3b3b3;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: color 0.2s ease;
+  font-weight: 500;
+
+  &:hover {
+    color: white;
+  }
+`;
+
 export default function Navigation() {
+  const { user, logout } = useAuth();
+  const pathname = usePathname();
+  
+  if (pathname === '/login') return null;
+  
   return (
     <Nav>
       <NavContent>
@@ -72,13 +94,18 @@ export default function Navigation() {
             <LogoText>Spotify Admin</LogoText>
           </Logo>
 
-          <NavLinks>
-            {['Artistes', 'Albums', 'Sons', 'Playlists'].map((item) => (
-              <NavLink key={item} href={`/${item.toLowerCase()}`}>
-                {item}
-              </NavLink>
-            ))}
-          </NavLinks>
+          {user && (
+            <NavLinks>
+              {['Artists', 'Albums', 'Songs', 'Playlists'].map((item) => (
+                <NavLink key={item} href={`/${item.toLowerCase()}`}>
+                  {item}
+                </NavLink>
+              ))}
+              <LogoutButton onClick={logout}>
+                Déconnexion
+              </LogoutButton>
+            </NavLinks>
+          )}
         </NavInner>
       </NavContent>
     </Nav>

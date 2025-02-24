@@ -2,6 +2,7 @@ import './globals.css'
 import { Inter } from 'next/font/google'
 import StyledComponentsRegistry from './registry'
 import Navigation from './components/Navigation'
+import { AuthProvider } from './utils/AuthContext'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -39,14 +40,16 @@ export default function RootLayout({ children }) {
       </head>
       <body className={inter.className} style={{ background: '#121212' }}>
         <StyledComponentsRegistry>
-          <Navigation />
-          <main style={{
-            paddingTop: '64px',
-            minHeight: '100vh',
-            background: '#121212'
-          }}>
-            {children}
-          </main>
+          <AuthProvider>
+            <Navigation />
+            <main style={{
+              paddingTop: '64px',
+              minHeight: '100vh',
+              background: '#121212'
+            }}>
+              {children}
+            </main>
+          </AuthProvider>
         </StyledComponentsRegistry>
       </body>
     </html>
