@@ -32,18 +32,22 @@ const ArtistsPage = () => {
 				</NewArtistButton>
 			</Header>
 			<ArtistsGrid>
-				{artists.map((artist) => (
-					<ArtistCard
-						key={artist.id}
-						onClick={() => router.push(`/artists/manage/${artist.id}`)}
-					>
-						<ArtistImage
-							src={artist.image || '/placeholder.jpg'}
-							alt={artist.name}
-						/>
-						<ArtistName>{artist.name}</ArtistName>
-					</ArtistCard>
-				))}
+				{Array.isArray(artists) ? (
+					artists.map((artist) => (
+						<ArtistCard
+							key={artist.id}
+							onClick={() => router.push(`/artists/manage/${artist.id}`)}
+						>
+							<ArtistImage
+								src={artist.image || '/placeholder.jpg'}
+								alt={artist.name}
+							/>
+							<ArtistName>{artist.name}</ArtistName>
+						</ArtistCard>
+					))
+				) : (
+					<p>No artists available.</p>
+				)}
 			</ArtistsGrid>
 		</Container>
 	);

@@ -1,5 +1,3 @@
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
-
 const handleResponse = async (response) => {
 	if (!response.ok) {
 		const error = await response.json();
@@ -11,9 +9,7 @@ const handleResponse = async (response) => {
 export const artistApi = {
 	getAllArtists: async (page = 1, limit = 10) => {
 		try {
-			const response = await fetch(
-				`${BASE_URL}/artists?page=${page}&limit=${limit}`
-			);
+			const response = await fetch(`/api/artists?page=${page}&limit=${limit}`);
 			return handleResponse(response);
 		} catch (error) {
 			return {
@@ -26,23 +22,23 @@ export const artistApi = {
 	},
 
 	getArtist: async (artistId) => {
-		const response = await fetch(`${BASE_URL}/artists/${artistId}`);
+		const response = await fetch(`/api/artists/${artistId}`);
 		return handleResponse(response);
 	},
 
 	getArtistTracks: async (artistId) => {
-		const response = await fetch(`${BASE_URL}/artists/${artistId}/top-tracks`);
+		const response = await fetch(`/api/artists/${artistId}/top-tracks`);
 		return handleResponse(response);
 	},
 
 	getPopularArtists: async () => {
-		const response = await fetch(`${BASE_URL}/artists/popular`);
+		const response = await fetch('/api/artists/popular');
 		return handleResponse(response);
 	},
 
 	createArtist: async (artistData) => {
 		try {
-			const response = await fetch(`${BASE_URL}/artists`, {
+			const response = await fetch('/api/artists', {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
@@ -58,7 +54,7 @@ export const artistApi = {
 
 	updateArtist: async (artistData) => {
 		try {
-			const response = await fetch(`${BASE_URL}/artists/${artistData.id}`, {
+			const response = await fetch(`/api/artists/${artistData.id}`, {
 				method: 'PUT',
 				headers: {
 					'Content-Type': 'application/json',
@@ -74,7 +70,7 @@ export const artistApi = {
 
 	deleteArtist: async (artistId) => {
 		try {
-			const response = await fetch(`${BASE_URL}/artists/${artistId}`, {
+			const response = await fetch(`/api/artists/${artistId}`, {
 				method: 'DELETE',
 			});
 
