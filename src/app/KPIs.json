@@ -1,0 +1,101 @@
+[
+	{
+		"id": 1,
+		"label": "CPU Usage (%)",
+		"type": "circle",
+		"thresholds": {
+			"warning": 70,
+			"critical": 90
+		},
+		"enabled": true,
+		"order": 1
+	},
+	{
+		"id": 2,
+		"label": "Memory Usage (%)",
+		"type": "circle",
+		"thresholds": {
+			"warning": 60,
+			"critical": 85
+		},
+		"enabled": true,
+		"order": 2
+	},
+	{
+		"id": 3,
+		"label": "Disk Usage (%)",
+		"type": "circle",
+		"thresholds": {
+			"warning": 70,
+			"critical": 90
+		},
+		"enabled": true,
+		"order": 3
+	},
+	{
+		"id": 4,
+		"label": "Bandwidth Usage (Gbps)",
+		"type": "text",
+		"thresholds": {
+			"warning": 70,
+			"critical": 90
+		},
+		"enabled": true,
+		"order": 4
+	},
+	{
+		"id": 5,
+		"label": "Streams",
+		"type": "text",
+		"thresholds": {
+			"warning": 70,
+			"critical": 90
+		},
+		"enabled": true,
+		"order": 5
+	},
+	{
+		"id": 6,
+		"label": "Users",
+		"type": "text",
+		"thresholds": {
+			"warning": 70,
+			"critical": 90
+		},
+		"enabled": true,
+		"order": 6
+	},
+	{
+		"id": 7,
+		"label": "Used Storage (Gb)",
+		"type": "text",
+		"thresholds": {
+			"warning": 70,
+			"critical": 90
+		},
+		"enabled": true,
+		"order": 7
+	},
+	{
+		"id": 8,
+		"label": "Media Treatment Time (ms)",
+		"type": "text",
+		"thresholds": {
+			"warning": 70,
+			"critical": 90
+		},
+		"enabled": true,
+		"order": 8
+	},
+	{
+		"id": 9,
+		"label": "Success Rate (%)",
+		"type": "circle",
+		"thresholds": {
+			"warning": 70,
+			"critical": 90
+		},
+		"enabled": true,
+		"order": 9
+	}
+]

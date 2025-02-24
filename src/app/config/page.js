@@ -1,10 +1,7 @@
 'use client';
 import {useDispatch, useSelector} from 'react-redux';
-import {
-	updateKpiConfig,
-	selectKpiConfig,
-} from '../../storeRedux/dashboardSlice';
-import {saveKpiConfig} from '../../utils/cookies';
+import {updateKpiConfig, selectKpiConfig} from '@/storeRedux/dashboardSlice';
+import {saveKpiConfig} from '@/utils/cookies';
 import {DndContext, closestCenter} from '@dnd-kit/core';
 import {
 	SortableContext,

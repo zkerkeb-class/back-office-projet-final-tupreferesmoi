@@ -2,7 +2,7 @@
 import {useEffect} from 'react';
 import {useRouter} from 'next/navigation';
 import {useDispatch, useSelector} from 'react-redux';
-import {fetchArtists, selectArtists} from '../storeRedux/artistsSlice';
+import {fetchArtists, selectArtists} from '@/storeRedux/artistsSlice';
 
 import {
 	Container,
