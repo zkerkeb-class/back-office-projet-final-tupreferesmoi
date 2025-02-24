@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import styled from 'styled-components'
+import { useEffect, useState } from 'react'
 
 const Container = styled.div`
   max-width: 1200px;
@@ -193,36 +194,87 @@ const StatsChange = styled.span`
 `;
 
 export default function Home() {
+  const [artists, setArtists] = useState([]);
+  const [albums, setAlbums] = useState([]);
+  const [tracks, setTracks] = useState([]);
+  const [playlists, setPlaylists] = useState([]);
+  const [totalArtists, setTotalArtists] = useState(0);
+  const [totalAlbums, setTotalAlbums] = useState(0);
+  const [totalTracks, setTotalTracks] = useState(0);
+  const [totalPlaylists, setTotalPlaylists] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [artistsRes, albumsRes, tracksRes, playlistsRes] = await Promise.all([
+          fetch('/api/artists?limit=100'),
+          fetch('/api/albums?limit=100'),
+          fetch('/api/tracks?limit=100'),
+          fetch('/api/playlists/public?limit=100')
+        ]);
+
+        if (!artistsRes.ok || !albumsRes.ok || !tracksRes.ok || !playlistsRes.ok) {
+          throw new Error('Erreur lors de la récupération des données');
+        }
+
+        const [artistsData, albumsData, tracksData, playlistsData] = await Promise.all([
+          artistsRes.json(),
+          albumsRes.json(),
+          tracksRes.json(),
+          playlistsRes.json()
+        ]);
+
+        setArtists(artistsData.data || []);
+        setAlbums(albumsData.data || []);
+        setTracks(tracksData.data || []);
+        setPlaylists(playlistsData.data || []);
+        
+        setTotalArtists(artistsData.pagination?.totalItems || 0);
+        setTotalAlbums(albumsData.pagination?.totalItems || 0);
+        setTotalTracks(tracksData.pagination?.totalItems || 0);
+        setTotalPlaylists(playlistsData.pagination?.totalItems || 0);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
   const sections = [
     {
       title: 'Artistes',
       description: 'Gérer les artistes de la plateforme',
       icon: '🎤',
       link: '/artists',
-      stats: '0 artistes'
+      stats: loading ? 'Chargement...' : `${totalArtists} artistes`
     },
     {
       title: 'Albums',
       description: 'Gérer les albums et leurs contenus',
       icon: '💿',
       link: '/albums',
-      stats: '0 albums'
+      stats: loading ? 'Chargement...' : `${totalAlbums} albums`
     },
     {
       title: 'Sons',
       description: 'Gérer la bibliothèque musicale',
       icon: '🎵',
       link: '/tracks',
-      stats: '0 titres'
+      stats: loading ? 'Chargement...' : `${totalTracks} titres`
     },
     {
       title: 'Playlists',
       description: 'Gérer les playlists du système',
       icon: '📑',
       link: '/playlists',
-      stats: '0 playlists'
+      stats: loading ? 'Chargement...' : `${totalPlaylists} playlists publiques`
     }
-  ]
+  ];
 
   return (
     <Container>
@@ -265,21 +317,43 @@ export default function Home() {
 
         <StatsGrid>
           {[
-            { label: 'Total Artistes', value: '0', change: '+0' },
-            { label: 'Total Albums', value: '0', change: '+0' },
-            { label: 'Total Sons', value: '0', change: '+0' },
-            { label: 'Total Playlists', value: '0', change: '+0' }
+            { 
+              label: 'Total Artistes', 
+              value: loading ? '...' : totalArtists, 
+              change: `+${totalArtists} cette semaine` 
+            },
+            { 
+              label: 'Total Albums', 
+              value: loading ? '...' : totalAlbums, 
+              change: `+${totalAlbums} cette semaine` 
+            },
+            { 
+              label: 'Total Sons', 
+              value: loading ? '...' : totalTracks, 
+              change: `+${totalTracks} cette semaine` 
+            },
+            { 
+              label: 'Total Playlists', 
+              value: loading ? '...' : totalPlaylists,
+              change: `+${totalPlaylists} cette semaine`
+            }
           ].map((stat, index) => (
             <StatsCard key={index}>
-              <StatsLabel>{stat.label}</StatsLabel>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                <StatsValue>{stat.value}</StatsValue>
-                <StatsChange>{stat.change} cette semaine</StatsChange>
-              </div>
+              {error ? (
+                <StatsLabel style={{ color: 'red' }}>Erreur de chargement</StatsLabel>
+              ) : (
+                <>
+                  <StatsLabel>{stat.label}</StatsLabel>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                    <StatsValue>{stat.value}</StatsValue>
+                    <StatsChange>{stat.change}</StatsChange>
+                  </div>
+                </>
+              )}
             </StatsCard>
           ))}
         </StatsGrid>
       </StatsSection>
     </Container>
-  )
+  );
 }
