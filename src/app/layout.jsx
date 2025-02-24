@@ -6,13 +6,37 @@ import Navigation from './components/Navigation'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata = {
-  title: 'Spotify Admin',
+  metadataBase: new URL('http://localhost:3001'),
+  title: {
+    default: 'Spotify Admin',
+    template: '%s | Spotify Admin'
+  },
   description: 'Backoffice pour la gestion de contenu Spotify-like',
+  manifest: '/site.webmanifest',
+  icons: {
+    icon: '/favicon.ico',
+    shortcut: '/favicon.ico',
+  },
+  appleWebApp: {
+    title: 'Spotify Admin',
+    statusBarStyle: 'default',
+  },
+}
+
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  themeColor: '#121212',
 }
 
 export default function RootLayout({ children }) {
   return (
     <html lang="fr">
+      <head>
+        <meta charSet="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link rel="icon" href="/favicon.ico" />
+      </head>
       <body className={inter.className} style={{ background: '#121212' }}>
         <StyledComponentsRegistry>
           <Navigation />

@@ -12,9 +12,8 @@ const nextConfig = {
       },
     ]
   },
-  server: {
-    port: 3001,
-  },
+  output: 'standalone',
+  poweredByHeader: false,
 }
 
 module.exports = nextConfig 
