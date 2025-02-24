@@ -9,6 +9,9 @@ import {
 	deleteArtist,
 } from '../../storeRedux/artistsSlice';
 
+import {confirmAlert} from 'react-confirm-alert';
+import 'react-confirm-alert/src/react-confirm-alert.css';
+
 import {Container, Form, Label, Input, Button, DeleteButton} from './style';
 
 const ManageArtistPage = () => {
@@ -49,10 +52,22 @@ const ManageArtistPage = () => {
 	};
 
 	const handleDelete = async () => {
-		if (confirm('Are you sure you want to delete this artist?')) {
-			await dispatch(deleteArtist(id));
-			router.push('/artists');
-		}
+		confirmAlert({
+			title: 'Confirm Deletion',
+			message: 'Are you sure you want to delete this artist?',
+			buttons: [
+				{
+					label: 'Yes',
+					onClick: async () => {
+						await dispatch(deleteArtist(id));
+						router.push('/artists');
+					},
+				},
+				{
+					label: 'No',
+				},
+			],
+		});
 	};
 
 	if (!artist) {

@@ -1,12 +1,9 @@
 const nextConfig = {
-	experimental: {
-		disablePostcssPresetEnv: true, // Désactive certaines optimisations qui utilisent gzip-size
-	},
-	webpack: (config, {isServer}) => {
+	webpack: (config) => {
 		config.resolve.fallback = {
 			fs: false,
-			path: false,
-			os: false,
+			stream: require.resolve('stream-browserify'),
+			zlib: require.resolve('browserify-zlib'),
 		};
 		return config;
 	},
