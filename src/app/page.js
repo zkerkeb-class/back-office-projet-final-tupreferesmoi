@@ -16,7 +16,7 @@ import {
 	responseTimes,
 	cacheLatencies,
 	updateKpiConfig,
-} from '@/storeRedux/dashboardSlice';
+} from '../storeRedux/dashboardSlice';
 import {Line} from 'react-chartjs-2';
 import {
 	Chart as ChartJS,
@@ -29,7 +29,7 @@ import {
 	Tooltip,
 	Legend,
 } from 'chart.js';
-import {getkpiConfig, saveKpiConfig} from '@/utils/cookies';
+import {getkpiConfig, saveKpiConfig} from '../utils/cookies';
 import KpiChart from './KpiChart';
 
 // Save necessary Chart.js components

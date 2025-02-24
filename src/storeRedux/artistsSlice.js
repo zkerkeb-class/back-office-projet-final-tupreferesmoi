@@ -1,5 +1,5 @@
 import {createSlice, createAsyncThunk} from '@reduxjs/toolkit';
-import {artistApi} from '@/app/api/artistAPI';
+import {artistApi} from '../app/api/artistAPI';
 
 export const fetchArtists = createAsyncThunk(
 	'artists/fetchArtists',

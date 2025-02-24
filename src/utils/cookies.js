@@ -1,5 +1,5 @@
 import Cookies from 'js-cookie';
-import kpiDefaults from '../dashboard/KPIs.json';
+import kpiDefaults from '../app/KPIs.json';
 
 const COOKIE_NAME = 'kpiConfig';
 

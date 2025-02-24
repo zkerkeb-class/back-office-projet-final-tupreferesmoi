@@ -7,7 +7,7 @@ import {
 	createArtist,
 	updateArtist,
 	deleteArtist,
-} from '@/storeRedux/artistsSlice';
+} from '../../../storeRedux/artistsSlice';
 
 import {Container, Form, Label, Input, Button, DeleteButton} from './style';
 
