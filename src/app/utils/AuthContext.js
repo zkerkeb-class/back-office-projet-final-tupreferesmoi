@@ -82,7 +82,7 @@ export const AuthProvider = ({ children }) => {
       if (data.user && data.user.role === 'admin') {
         setCookie('token', data.token, 7); // expire dans 7 jours
         setUser(data.user);
-        router.push('/dashboard');
+        router.push('/');
         return true;
       } else {
         throw new Error('Accès non autorisé - Rôle administrateur requis');
