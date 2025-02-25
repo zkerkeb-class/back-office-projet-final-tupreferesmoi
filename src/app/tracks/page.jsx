@@ -7,6 +7,7 @@ import { Container, Header, Title, Button, ErrorMessage } from './styles/TrackSt
 import TrackTable from './components/TrackTable';
 import TrackModal from './components/TrackModal';
 import * as api from './utils/api';
+import Pagination from '../components/Pagination';
 
 export default function TracksPage() {
   const { user, loading } = useAuth();
@@ -290,33 +291,11 @@ export default function TracksPage() {
         onDelete={handleDelete}
       />
 
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center',
-        marginTop: '1rem',
-        padding: '1rem',
-        background: '#282828',
-        borderRadius: '8px'
-      }}>
-        <span style={{ color: '#b3b3b3' }}>
-          Page {page} sur {totalPages}
-        </span>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <Button
-            onClick={() => setPage(prev => Math.max(1, prev - 1))}
-            disabled={page === 1}
-          >
-            Précédent
-          </Button>
-          <Button
-            onClick={() => setPage(prev => Math.min(totalPages, prev + 1))}
-            disabled={page === totalPages}
-          >
-            Suivant
-          </Button>
-        </div>
-      </div>
+      <Pagination 
+        page={page}
+        totalPages={totalPages}
+        onPageChange={setPage}
+      />
 
       <TrackModal
         isOpen={isModalOpen}
