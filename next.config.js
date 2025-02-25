@@ -14,6 +14,9 @@ const nextConfig = {
   },
   output: 'standalone',
   poweredByHeader: false,
+  experimental: {
+    middleware: true
+  }
 }
 
 module.exports = nextConfig 

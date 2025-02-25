@@ -3,6 +3,8 @@
 import Link from 'next/link'
 import styled from 'styled-components'
 import { useEffect, useState } from 'react'
+import { useAuth } from './utils/AuthContext'
+import { useRouter } from 'next/navigation'
 
 const Container = styled.div`
   max-width: 1200px;
@@ -194,6 +196,8 @@ const StatsChange = styled.span`
 `;
 
 export default function Home() {
+  const { user, loading } = useAuth();
+  const router = useRouter();
   const [artists, setArtists] = useState([]);
   const [albums, setAlbums] = useState([]);
   const [tracks, setTracks] = useState([]);
@@ -202,10 +206,18 @@ export default function Home() {
   const [totalAlbums, setTotalAlbums] = useState(0);
   const [totalTracks, setTotalTracks] = useState(0);
   const [totalPlaylists, setTotalPlaylists] = useState(0);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    if (!loading && !user) {
+      router.push('/login');
+      return;
+    }
+  }, [user, loading, router]);
+
+  useEffect(() => {
+    if (!user) return;
+
     const fetchData = async () => {
       try {
         const [artistsRes, albumsRes, tracksRes, playlistsRes] = await Promise.all([
@@ -237,13 +249,19 @@ export default function Home() {
         setTotalPlaylists(playlistsData.pagination?.totalItems || 0);
       } catch (err) {
         setError(err.message);
-      } finally {
-        setLoading(false);
       }
     };
 
     fetchData();
-  }, []);
+  }, [user]);
+
+  if (loading) {
+    return <Container>Chargement...</Container>;
+  }
+
+  if (!user) {
+    return null;
+  }
 
   const sections = [
     {

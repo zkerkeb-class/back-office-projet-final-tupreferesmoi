@@ -96,11 +96,10 @@ export default function Navigation() {
 
           {user && (
             <NavLinks>
-              {['Artists', 'Albums', 'Songs', 'Playlists'].map((item) => (
-                <NavLink key={item} href={`/${item.toLowerCase()}`}>
-                  {item}
-                </NavLink>
-              ))}
+              <NavLink href="/artists">Artistes</NavLink>
+              <NavLink href="/albums">Albums</NavLink>
+              <NavLink href="/tracks">Sons</NavLink>
+              <NavLink href="/playlists">Playlists</NavLink>
               <LogoutButton onClick={logout}>
                 Déconnexion
               </LogoutButton>
@@ -109,5 +108,5 @@ export default function Navigation() {
         </NavInner>
       </NavContent>
     </Nav>
-  )
+  );
 } 
