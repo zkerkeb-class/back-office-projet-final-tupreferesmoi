@@ -78,6 +78,7 @@ export default function Navigation() {
                 {item}
               </NavLink>
             ))}
+            <NavLink href={('./users')}>Utilisateurs</NavLink>            
           </NavLinks>
         </NavInner>
       </NavContent>
