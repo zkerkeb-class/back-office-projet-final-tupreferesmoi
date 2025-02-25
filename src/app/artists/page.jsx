@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '../utils/AuthContext';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Container, Header, Title, Button, ErrorMessage } from './styles/ArtistStyles';
 import ArtistTable from './components/ArtistTable';
 import Pagination from './components/Pagination';
@@ -12,39 +12,49 @@ import * as api from './utils/api';
 export default function ArtistsPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [artists, setArtists] = useState([]);
   const [selectedArtist, setSelectedArtist] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [error, setError] = useState('');
-  const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalArtists, setTotalArtists] = useState(0);
   const itemsPerPage = 10;
 
-  const [editForm, setEditForm] = useState({
-    id: '',
-    name: '',
-    genres: '',
-    popularity: 0,
-    image: ''
-  });
+  // Récupérer la page depuis l'URL ou utiliser 1 par défaut
+  const currentPage = parseInt(searchParams.get('page') || '1');
+
+  const updatePageInUrl = (newPage) => {
+    const params = new URLSearchParams(searchParams);
+    params.set('page', newPage.toString());
+    router.push(`/artists?${params.toString()}`);
+  };
 
   useEffect(() => {
     if (!loading && !user) {
       router.push('/login');
       return;
     }
-    if (user) fetchArtists();
-  }, [user, loading, page]);
+    if (user) fetchArtists(currentPage);
+  }, [user, loading, currentPage]);
 
-  const fetchArtists = async () => {
+  const fetchArtists = async (page = currentPage) => {
+    console.log('fetchArtists - Début de la récupération');
     try {
       const data = await api.fetchWithAuth(`/api/artists?page=${page}&limit=${itemsPerPage}`);
+      console.log('fetchArtists - Données reçues:', data);
+      
       const formattedArtists = data.data.map(api.formatArtistData);
+      console.log('fetchArtists - Données formatées:', formattedArtists);
       
       setArtists(formattedArtists);
       setTotalPages(Math.ceil(data.pagination?.totalItems / itemsPerPage) || 1);
+      setTotalArtists(data.pagination?.totalItems || 0);
       setError('');
+      
+      console.log('fetchArtists - État mis à jour avec:', formattedArtists);
     } catch (error) {
+      console.error('fetchArtists - Erreur:', error);
       setError(error.message);
       if (error.message === 'Non authentifié') router.push('/login');
     }
@@ -52,13 +62,6 @@ export default function ArtistsPage() {
 
   const handleEdit = (artist) => {
     setSelectedArtist(artist);
-    setEditForm({
-      id: artist.id,
-      name: artist.name,
-      genres: Array.isArray(artist.genres) ? artist.genres.join(', ') : '',
-      popularity: artist.popularity || 0,
-      image: artist.imageUrl || ''
-    });
     setIsModalOpen(true);
   };
 
@@ -67,77 +70,66 @@ export default function ArtistsPage() {
 
     try {
       await api.fetchWithAuth(`/api/artists/${id}`, { method: 'DELETE' });
-      await fetchArtists();
-      setError('');
-    } catch (error) {
-      setError(error.message);
-    }
-  };
-
-  const handleImageUpload = async (file) => {
-    try {
-      const urls = await api.uploadArtistImage(file, editForm.name);
-      if (urls?.thumbnail) {
-        setEditForm(prev => ({
-          ...prev,
-          image: urls.thumbnail
-        }));
-      }
-      return urls;
-    } catch (error) {
-      setError("Erreur lors de l'upload de l'image: " + error.message);
-      throw error;
-    }
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!editForm.id) return;
-
-    try {
-      const isImageChanged = editForm.image !== selectedArtist?.imageUrl;
-      const genres = editForm.genres.split(',').map(g => g.trim()).filter(Boolean);
       
-      const formattedData = {
-        name: editForm.name,
-        genres,
-        popularity: parseInt(editForm.popularity),
-        ...(isImageChanged && editForm.image && {
-          image: {
-            thumbnail: api.extractBaseUrl(editForm.image),
-            medium: api.extractBaseUrl(editForm.image),
-            large: api.extractBaseUrl(editForm.image)
-          }
-        })
-      };
+      // Mettre à jour l'état local immédiatement
+      setArtists(prevArtists => prevArtists.filter(artist => artist.id !== id));
+      setError('');
+      
+      // Rafraîchir la liste pour la page actuelle
+      fetchArtists(currentPage);
+    } catch (error) {
+      console.error('Erreur lors de la suppression:', error);
+      setError(error.message || "Erreur lors de la suppression de l'artiste");
+      // Rafraîchir la liste même en cas d'erreur pour s'assurer de la cohérence
+      fetchArtists(currentPage);
+    }
+  };
 
-      const updatedArtist = await api.fetchWithAuth(`/api/artists/${editForm.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formattedData)
-      });
+  const handleModalClose = () => {
+    setIsModalOpen(false);
+    setSelectedArtist(null);
+  };
 
-      if (updatedArtist.success) {
-        const updatedArtistData = api.formatArtistData({
-          ...updatedArtist.data,
-          imageUrl: isImageChanged 
-            ? (updatedArtist.data?.image?.thumbnail || editForm.image) 
-            : selectedArtist.imageUrl
+  const handleModalSubmit = async (artistData) => {
+    try {
+      if (selectedArtist) {
+        // Mode édition
+        const formattedData = {
+          name: artistData.name,
+          genres: artistData.genres,
+          popularity: selectedArtist.popularity || 0,
+          image: selectedArtist.image
+        };
+
+        const response = await api.fetchWithAuth(`/api/artists/${selectedArtist.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formattedData)
         });
 
-        setArtists(prevArtists => 
-          prevArtists.map(artist => 
-            artist.id === editForm.id ? updatedArtistData : artist
-          )
-        );
-
-        setIsModalOpen(false);
-        setError('');
+        if (response.success) {
+          setError('');
+          handleModalClose();
+          fetchArtists(currentPage);
+        }
       } else {
-        throw new Error('La mise à jour n\'a pas retourné les données attendues');
+        // Mode création
+        const response = await api.fetchWithAuth('/api/artists', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(artistData)
+        });
+
+        if (response.success) {
+          setError('');
+          handleModalClose();
+          // Rediriger vers la première page pour voir le nouvel artiste
+          updatePageInUrl(1);
+        }
       }
     } catch (error) {
-      setError(error.message);
+      console.error('Erreur lors de l\'opération:', error);
+      setError(error.message || "Une erreur est survenue");
     }
   };
 
@@ -147,9 +139,8 @@ export default function ArtistsPage() {
   return (
     <Container>
       <Header>
-        <Title>Artistes</Title>
+        <Title>Artistes ({totalArtists} au total)</Title>
         <Button onClick={() => setIsModalOpen(true)}>
-          <span>+</span>
           Nouvel artiste
         </Button>
       </Header>
@@ -163,18 +154,16 @@ export default function ArtistsPage() {
       />
 
       <Pagination 
-        page={page}
+        page={currentPage}
         totalPages={totalPages}
-        onPageChange={setPage}
+        onPageChange={updatePageInUrl}
       />
 
       <ArtistModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        formData={editForm}
-        onChange={setEditForm}
-        onSubmit={handleSubmit}
-        onImageUpload={handleImageUpload}
+        onClose={handleModalClose}
+        onSubmit={handleModalSubmit}
+        artist={selectedArtist}
       />
     </Container>
   );

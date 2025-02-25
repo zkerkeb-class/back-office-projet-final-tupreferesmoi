@@ -1,4 +1,52 @@
 import { Table, Th, Td, Tr, ActionButton, ImagePreview } from '../styles/AlbumStyles';
+import styled from 'styled-components';
+
+const ResponsiveTable = styled.div`
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-bottom: 1rem;
+  width: 100%;
+  
+  @media (max-width: 768px) {
+    border-radius: 8px;
+    background: #282828;
+  }
+`;
+
+const MobileInfo = styled.div`
+  display: none;
+  
+  @media (max-width: 768px) {
+    display: block;
+    margin-top: 0.5rem;
+    font-size: 0.875rem;
+    color: #b3b3b3;
+  }
+`;
+
+const DesktopCell = styled(Td)`
+  @media (max-width: 768px) {
+    display: none;
+  }
+`;
+
+const MainCell = styled(Td)`
+  @media (max-width: 768px) {
+    &.title-cell {
+      max-width: 200px;
+    }
+  }
+`;
+
+const ActionButtons = styled.div`
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  
+  @media (max-width: 768px) {
+    flex-direction: row;
+  }
+`;
 
 export const EditIcon = () => (
   <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
@@ -34,17 +82,18 @@ export default function AlbumTable({ albums, onEdit, onDelete }) {
   };
 
   return (
-    <div className="table-responsive">
+    <ResponsiveTable>
       <Table>
         <thead>
           <tr>
             <Th style={{ width: '50px' }}></Th>
             <Th>Titre</Th>
-            <Th className="hide-mobile">Genre</Th>
-            <Th className="hide-mobile">Date de sortie</Th>
-            <Th className="hide-mobile">Type</Th>
-            <Th>Pistes</Th>
-            <Th style={{ width: '100px' }}>Actions</Th>
+            <MainCell as="th">Artiste</MainCell>
+            <DesktopCell as="th">Genre</DesktopCell>
+            <DesktopCell as="th">Date de sortie</DesktopCell>
+            <DesktopCell as="th">Type</DesktopCell>
+            <MainCell as="th">Pistes</MainCell>
+            <MainCell as="th" style={{ width: '100px' }}>Actions</MainCell>
           </tr>
         </thead>
         <tbody>
@@ -62,32 +111,33 @@ export default function AlbumTable({ albums, onEdit, onDelete }) {
                   )}
                 </ImagePreview>
               </Td>
-              <Td>
-                <div className="album-info">
-                  <div className="album-title">{album.title}</div>
-                  <div className="album-details show-mobile">
-                    {formatGenres(album.genres)} • {album.type}
-                  </div>
+              <MainCell className="title-cell">
+                <div>
+                  {album.title}
+                  <MobileInfo>
+                    {album.artist} • {album.type} • {formatGenres(album.genres)}
+                  </MobileInfo>
                 </div>
-              </Td>
-              <Td className="hide-mobile">{formatGenres(album.genres)}</Td>
-              <Td className="hide-mobile">{formatDate(album.releaseDate)}</Td>
-              <Td className="hide-mobile">{album.type}</Td>
-              <Td>{album.trackCount}</Td>
-              <Td>
-                <div className="action-buttons">
+              </MainCell>
+              <MainCell>{album.artist}</MainCell>
+              <DesktopCell>{formatGenres(album.genres)}</DesktopCell>
+              <DesktopCell>{formatDate(album.releaseDate)}</DesktopCell>
+              <DesktopCell>{album.type}</DesktopCell>
+              <MainCell>{album.trackCount}</MainCell>
+              <MainCell>
+                <ActionButtons>
                   <ActionButton onClick={() => onEdit(album)} title="Modifier">
                     <EditIcon />
                   </ActionButton>
                   <ActionButton onClick={() => onDelete(album.id)} title="Supprimer">
                     <DeleteIcon />
                   </ActionButton>
-                </div>
-              </Td>
+                </ActionButtons>
+              </MainCell>
             </Tr>
           ))}
         </tbody>
       </Table>
-    </div>
+    </ResponsiveTable>
   );
 } 

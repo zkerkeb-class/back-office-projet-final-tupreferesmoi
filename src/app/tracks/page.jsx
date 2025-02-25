@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '../utils/AuthContext';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Container, Header, Title, Button, ErrorMessage } from './styles/TrackStyles';
 import TrackTable from './components/TrackTable';
 import TrackModal from './components/TrackModal';
@@ -12,15 +12,24 @@ import Pagination from '../components/Pagination';
 export default function TracksPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [tracks, setTracks] = useState([]);
   const [albums, setAlbums] = useState([]);
   const [artists, setArtists] = useState([]);
   const [selectedTrack, setSelectedTrack] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [error, setError] = useState('');
-  const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const itemsPerPage = 10;
+
+  // Récupérer la page depuis l'URL ou utiliser 1 par défaut
+  const currentPage = parseInt(searchParams.get('page') || '1');
+
+  const updatePageInUrl = (newPage) => {
+    const params = new URLSearchParams(searchParams);
+    params.set('page', newPage.toString());
+    router.push(`/tracks?${params.toString()}`);
+  };
 
   const [editForm, setEditForm] = useState({
     id: '',
@@ -44,11 +53,11 @@ export default function TracksPage() {
       fetchAlbums();
       fetchArtists();
     }
-  }, [user, loading, page]);
+  }, [user, loading, currentPage]);
 
   const fetchTracks = async () => {
     try {
-      const response = await api.fetchWithAuth(`/api/tracks?page=${page}&limit=${itemsPerPage}`);
+      const response = await api.fetchWithAuth(`/api/tracks?page=${currentPage}&limit=${itemsPerPage}`);
       
       const formattedTracks = await Promise.all(
         response.data.map(async (track) => {
@@ -292,9 +301,9 @@ export default function TracksPage() {
       />
 
       <Pagination 
-        page={page}
+        page={currentPage}
         totalPages={totalPages}
-        onPageChange={setPage}
+        onPageChange={updatePageInUrl}
       />
 
       <TrackModal

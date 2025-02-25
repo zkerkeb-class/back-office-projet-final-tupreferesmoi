@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { Button } from '../styles/ArtistStyles';
 
-const Modal = styled.div`
+const ModalOverlay = styled.div`
   position: fixed;
   top: 0;
   left: 0;
@@ -19,12 +19,41 @@ const ModalContent = styled.div`
   background: #282828;
   padding: 2rem;
   border-radius: 8px;
-  width: 100%;
-  max-width: 500px;
+  width: 90%;
+  max-width: 450px;
+  max-height: 90vh;
+  overflow-y: auto;
+  margin: 20px;
+
+  @media (max-width: 768px) {
+    padding: 1.5rem;
+    width: 95%;
+  }
+
+  /* Style de la scrollbar */
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: #1a1a1a;
+    border-radius: 4px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #404040;
+    border-radius: 4px;
+  }
 `;
 
 const FormGroup = styled.div`
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.25rem;
+  max-width: 400px;
+
+  @media (max-width: 768px) {
+    margin-bottom: 1rem;
+    max-width: 100%;
+  }
 `;
 
 const Label = styled.label`
@@ -41,146 +70,101 @@ const Input = styled.input`
   border-radius: 4px;
   color: white;
   font-size: 0.875rem;
+  max-width: 400px;
 
   &:focus {
     outline: none;
     border-color: #1DB954;
   }
 
-  &[type="file"] {
-    padding: 0.5rem;
-    &::-webkit-file-upload-button {
-      visibility: hidden;
-      width: 0;
+  @media (max-width: 768px) {
+    padding: 0.625rem;
+    max-width: 100%;
+  }
+`;
+
+const ErrorMessage = styled.div`
+  color: #ff4444;
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+`;
+
+const ArtistModal = ({ isOpen, onClose, onSubmit, artist }) => {
+  const [formData, setFormData] = useState({
+    name: '',
+    genres: ''
+  });
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (artist) {
+      setFormData({
+        name: artist.name || '',
+        genres: Array.isArray(artist.genres) ? artist.genres.join(', ') : ''
+      });
+    } else {
+      setFormData({
+        name: '',
+        genres: ''
+      });
     }
-    &::before {
-      content: 'Choisir une image';
-      display: inline-block;
-      background: #1DB954;
-      color: white;
-      padding: 0.5rem 1rem;
-      border-radius: 3px;
-      cursor: pointer;
-      margin-right: 1rem;
-    }
-  }
-`;
-
-const ImagePreview = styled.div`
-  margin-top: 1rem;
-  width: 100%;
-  max-width: 200px;
-  aspect-ratio: 1;
-  border-radius: 4px;
-  overflow: hidden;
-  background: #3E3E3E;
-
-  img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-`;
-
-const InputGroup = styled.div`
-  display: flex;
-  gap: 1rem;
-  align-items: flex-start;
-
-  ${Input}[type="url"] {
-    flex: 1;
-  }
-`;
-
-export default function ArtistModal({ isOpen, onClose, formData, onChange, onSubmit, onImageUpload }) {
-  const [previewUrl, setPreviewUrl] = useState(null);
+  }, [artist]);
 
   if (!isOpen) return null;
 
-  const handleFileChange = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    // Créer une URL de prévisualisation
-    const objectUrl = URL.createObjectURL(file);
-    setPreviewUrl(objectUrl);
-
-    // Appeler la fonction d'upload
-    if (onImageUpload) {
-      try {
-        await onImageUpload(file);
-      } catch (error) {
-        console.error('Erreur lors de l\'upload:', error);
-      }
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!formData.name.trim()) {
+      setError("Le nom de l'artiste est requis");
+      return;
     }
-  };
 
-  const handleUrlChange = (e) => {
-    const url = e.target.value;
-    onChange({...formData, image: url});
-    setPreviewUrl(url);
+    const genres = formData.genres
+      .split(',')
+      .map(g => g.trim())
+      .filter(Boolean);
+
+    await onSubmit({
+      name: formData.name,
+      genres
+    });
+
+    setFormData({ name: '', genres: '' });
+    setError('');
   };
 
   return (
-    <Modal onClick={onClose}>
+    <ModalOverlay onClick={onClose}>
       <ModalContent onClick={e => e.stopPropagation()}>
-        <form onSubmit={onSubmit}>
+        <form onSubmit={handleSubmit}>
           <FormGroup>
-            <Label>Nom</Label>
+            <Label>Nom *</Label>
             <Input
               type="text"
               value={formData.name}
-              onChange={e => onChange({...formData, name: e.target.value})}
-              required
+              onChange={e => setFormData(prev => ({ ...prev, name: e.target.value }))}
+              placeholder="Nom de l'artiste"
             />
+            {error && <ErrorMessage>{error}</ErrorMessage>}
           </FormGroup>
+
           <FormGroup>
             <Label>Genres (séparés par des virgules)</Label>
             <Input
               type="text"
               value={formData.genres}
-              onChange={e => onChange({...formData, genres: e.target.value})}
+              onChange={e => setFormData(prev => ({ ...prev, genres: e.target.value }))}
+              placeholder="Rock, Pop, Jazz..."
             />
           </FormGroup>
-          <FormGroup>
-            <Label>Popularité (0-100)</Label>
-            <Input
-              type="number"
-              min="0"
-              max="100"
-              value={formData.popularity}
-              onChange={e => onChange({...formData, popularity: e.target.value})}
-            />
-          </FormGroup>
-          <FormGroup>
-            <Label>Image</Label>
-            <InputGroup>
-              <Input
-                type="url"
-                value={formData.image}
-                onChange={handleUrlChange}
-                placeholder="URL de l'image"
-              />
-              <Input
-                type="file"
-                accept="image/*"
-                onChange={handleFileChange}
-              />
-            </InputGroup>
-            {(previewUrl || formData.image) && (
-              <ImagePreview>
-                <img
-                  src={previewUrl || formData.image}
-                  alt="Prévisualisation"
-                />
-              </ImagePreview>
-            )}
-          </FormGroup>
-          <Button type="submit">
-            Enregistrer
+
+          <Button type="submit" style={{ marginTop: '1.5rem' }}>
+            {artist ? 'Modifier' : 'Créer'}
           </Button>
         </form>
       </ModalContent>
-    </Modal>
+    </ModalOverlay>
   );
-} 
+};
+
+export default ArtistModal;

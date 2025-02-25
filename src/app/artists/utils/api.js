@@ -17,11 +17,22 @@ export const getAuthToken = () => {
   return cookie.split('=')[1];
 };
 
-export const fetchWithAuth = async (url, options = {}) => {
+export const fetchWithAuth = async (endpoint, options = {}) => {
   const token = getAuthToken();
   if (!token) throw new Error('Non authentifié');
 
-  const response = await fetch(url, {
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
+  const fullUrl = endpoint.startsWith('/api') ? `${baseUrl}${endpoint.substring(4)}` : `${baseUrl}${endpoint}`;
+
+  // Log complet de la requête
+  console.log('Request Details:', {
+    url: fullUrl,
+    method: options.method,
+    token: token,
+    endpoint: endpoint
+  });
+
+  const response = await fetch(fullUrl, {
     ...options,
     headers: {
       ...options.headers,
@@ -30,7 +41,16 @@ export const fetchWithAuth = async (url, options = {}) => {
   });
 
   const data = await response.json();
-  if (!response.ok) throw new Error(data.message || 'Une erreur est survenue');
+  if (!response.ok) {
+    console.error('Response Error:', {
+      status: response.status,
+      statusText: response.statusText,
+      data,
+      endpoint,
+      fullUrl
+    });
+    throw new Error(data.message || 'Une erreur est survenue');
+  }
   return data;
 };
 

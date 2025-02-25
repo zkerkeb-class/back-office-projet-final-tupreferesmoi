@@ -50,14 +50,14 @@ export const Table = styled.table`
   overflow: hidden;
 
   @media (max-width: 768px) {
-    .hide-mobile {
-      display: none;
+    font-size: 0.875rem;
+    
+    thead th {
+      padding: 0.75rem;
     }
-  }
-
-  @media (min-width: 769px) {
-    .show-mobile {
-      display: none;
+    
+    td {
+      padding: 0.75rem;
     }
   }
 `;
@@ -69,6 +69,7 @@ export const Th = styled.th`
   font-weight: 500;
   font-size: 0.875rem;
   border-bottom: 1px solid #404040;
+  white-space: nowrap;
 `;
 
 export const Td = styled.td`
@@ -77,6 +78,12 @@ export const Td = styled.td`
   border-bottom: 1px solid #404040;
   font-size: 0.875rem;
   vertical-align: middle;
+
+  @media (max-width: 768px) {
+    &:not(:first-child):not(:last-child) {
+      padding: 0.5rem 0.75rem;
+    }
+  }
 
   .album-info {
     display: flex;
@@ -108,22 +115,29 @@ export const Tr = styled.tr`
 export const ActionButton = styled.button`
   background: none;
   border: none;
+  padding: 0.5rem;
   color: #b3b3b3;
   cursor: pointer;
-  padding: 0.5rem;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
   border-radius: 4px;
-  
+  transition: all 0.2s;
+
   &:hover {
     color: white;
-    background: rgba(255, 255, 255, 0.1);
+    background: #404040;
+  }
+
+  @media (max-width: 768px) {
+    padding: 0.4rem;
   }
 
   svg {
     width: 20px;
     height: 20px;
+    
+    @media (max-width: 768px) {
+      width: 18px;
+      height: 18px;
+    }
   }
 `;
 

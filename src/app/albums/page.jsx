@@ -2,31 +2,33 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '../utils/AuthContext';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Container, Header, Title, Button, ErrorMessage } from './styles/AlbumStyles';
 import AlbumTable from './components/AlbumTable';
 import AlbumModal from './components/AlbumModal';
 import * as api from './utils/api';
+import Pagination from './components/Pagination';
 
 export default function AlbumsPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [albums, setAlbums] = useState([]);
   const [selectedAlbum, setSelectedAlbum] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [error, setError] = useState('');
-  const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalAlbums, setTotalAlbums] = useState(0);
   const itemsPerPage = 10;
 
-  const [editForm, setEditForm] = useState({
-    id: '',
-    title: '',
-    genres: '',
-    releaseDate: '',
-    type: '',
-    coverImage: ''
-  });
+  // Récupérer la page depuis l'URL ou utiliser 1 par défaut
+  const currentPage = parseInt(searchParams.get('page') || '1');
+
+  const updatePageInUrl = (newPage) => {
+    const params = new URLSearchParams(searchParams);
+    params.set('page', newPage.toString());
+    router.push(`/albums?${params.toString()}`);
+  };
 
   useEffect(() => {
     if (!loading && !user) {
@@ -34,11 +36,11 @@ export default function AlbumsPage() {
       return;
     }
     if (user) fetchAlbums();
-  }, [user, loading, page]);
+  }, [user, loading, currentPage]);
 
   const fetchAlbums = async () => {
     try {
-      const data = await api.fetchWithAuth(`/api/albums?page=${page}&limit=${itemsPerPage}`);
+      const data = await api.fetchWithAuth(`/api/albums?page=${currentPage}&limit=${itemsPerPage}`);
       
       // Créer un tableau de promesses pour les appels détaillés
       const detailPromises = data.data.map(album => 
@@ -54,6 +56,8 @@ export default function AlbumsPage() {
         return {
           id: album.id,
           title: album.title || 'Album Inconnu',
+          artist: detailedAlbum.artistId?.name || 'Artiste inconnu',
+          artistId: detailedAlbum.artistId?._id,
           genres: detailedAlbum.genres || [],
           releaseDate: detailedAlbum.releaseDate,
           type: detailedAlbum.type || 'album',
@@ -68,6 +72,7 @@ export default function AlbumsPage() {
       
       setAlbums(formattedAlbums);
       setTotalPages(Math.ceil(data.pagination?.totalItems / itemsPerPage) || 1);
+      setTotalAlbums(data.pagination?.totalItems || 0);
       setError('');
     } catch (error) {
       setError(error.message);
@@ -77,14 +82,6 @@ export default function AlbumsPage() {
 
   const handleEdit = (album) => {
     setSelectedAlbum(album);
-    setEditForm({
-      id: album.id,
-      title: album.title,
-      genres: Array.isArray(album.genres) ? album.genres.join(', ') : '',
-      releaseDate: album.releaseDate ? new Date(album.releaseDate).toISOString().split('T')[0] : '',
-      type: album.type || 'album',
-      coverImage: album.coverImage?.thumbnail || album.coverUrl || ''
-    });
     setIsModalOpen(true);
   };
 
@@ -102,9 +99,9 @@ export default function AlbumsPage() {
 
   const handleImageUpload = async (file) => {
     try {
-      const urls = await api.uploadAlbumCover(file, editForm.title);
+      const urls = await api.uploadAlbumCover(file, selectedAlbum.title);
       if (urls?.thumbnail) {
-        setEditForm(prev => ({
+        setSelectedAlbum(prev => ({
           ...prev,
           coverImage: urls.thumbnail
         }));
@@ -116,32 +113,33 @@ export default function AlbumsPage() {
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
+  const handleSubmit = async (albumData) => {
     try {
-      const genres = editForm.genres.split(',').map(g => g.trim()).filter(Boolean);
-      
-      const formattedData = {
-        title: editForm.title,
-        genres,
-        releaseDate: new Date(editForm.releaseDate).toISOString(),
-        type: editForm.type
-      };
-
-      // Si l'image a été modifiée, ajoutez-la aux données
-      if (editForm.coverImage && (!selectedAlbum || editForm.coverImage !== selectedAlbum.coverImage?.thumbnail)) {
-        formattedData.coverImage = {
-          thumbnail: editForm.coverImage,
-          medium: editForm.coverImage,
-          large: editForm.coverImage
-        };
+      // Vérifier que tous les champs requis sont présents
+      if (!albumData.title || !albumData.releaseDate || !albumData.type || !albumData.artistId) {
+        throw new Error('Tous les champs requis doivent être remplis');
       }
 
+      // Formater les données pour l'API
+      const formattedData = {
+        title: albumData.title.trim(),
+        genres: Array.isArray(albumData.genres) ? albumData.genres : albumData.genres.split(',').map(g => g.trim()).filter(Boolean),
+        releaseDate: new Date(albumData.releaseDate).toISOString(),
+        type: albumData.type,
+        artistId: albumData.artistId,
+        coverImage: albumData.coverImage ? {
+          thumbnail: albumData.coverImage,
+          medium: albumData.coverImage,
+          large: albumData.coverImage
+        } : undefined
+      };
+
+      console.log('Données formatées envoyées au serveur:', formattedData);
+
       let response;
-      if (editForm.id) {
+      if (selectedAlbum) {
         // Mise à jour
-        response = await api.fetchWithAuth(`/api/albums/${editForm.id}`, {
+        response = await api.fetchWithAuth(`/api/albums/${selectedAlbum.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(formattedData)
@@ -156,14 +154,16 @@ export default function AlbumsPage() {
       }
 
       if (response.success) {
-        await fetchAlbums(); // Recharger tous les albums pour avoir les données à jour
+        await fetchAlbums(); // Recharger tous les albums
         setIsModalOpen(false);
+        setSelectedAlbum(null);
         setError('');
       } else {
-        throw new Error('La mise à jour n\'a pas retourné les données attendues');
+        throw new Error(response.message || 'La mise à jour n\'a pas retourné les données attendues');
       }
     } catch (error) {
-      setError(error.message);
+      console.error('Erreur complète:', error);
+      setError(error.message || 'Une erreur est survenue lors de la création/modification de l\'album');
     }
   };
 
@@ -173,20 +173,11 @@ export default function AlbumsPage() {
   return (
     <Container>
       <Header>
-        <Title>Albums</Title>
+        <Title>Albums ({totalAlbums} au total)</Title>
         <Button onClick={() => {
           setSelectedAlbum(null);
-          setEditForm({
-            id: '',
-            title: '',
-            genres: '',
-            releaseDate: '',
-            type: '',
-            coverImage: ''
-          });
           setIsModalOpen(true);
         }}>
-          <span>+</span>
           Nouvel album
         </Button>
       </Header>
@@ -199,13 +190,20 @@ export default function AlbumsPage() {
         onDelete={handleDelete}
       />
 
+      <Pagination 
+        page={currentPage}
+        totalPages={totalPages}
+        onPageChange={updatePageInUrl}
+      />
+
       <AlbumModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        formData={editForm}
-        onChange={setEditForm}
+        onClose={() => {
+          setIsModalOpen(false);
+          setSelectedAlbum(null);
+        }}
         onSubmit={handleSubmit}
-        onImageUpload={handleImageUpload}
+        album={selectedAlbum}
       />
     </Container>
   );
