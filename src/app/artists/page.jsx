@@ -139,7 +139,7 @@ export default function ArtistsPage() {
   return (
     <Container>
       <Header>
-        <Title>Artistes ({totalArtists} au total)</Title>
+        <Title>Artistes ({totalArtists})</Title>
         <Button onClick={() => setIsModalOpen(true)}>
           Nouvel artiste
         </Button>

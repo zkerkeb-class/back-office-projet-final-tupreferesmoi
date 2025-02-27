@@ -173,7 +173,7 @@ export default function AlbumsPage() {
   return (
     <Container>
       <Header>
-        <Title>Albums ({totalAlbums} au total)</Title>
+        <Title>Albums ({totalAlbums})</Title>
         <Button onClick={() => {
           setSelectedAlbum(null);
           setIsModalOpen(true);

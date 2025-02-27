@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
 import { Button } from '../styles/TrackStyles';
 import * as api from '../utils/api';
@@ -9,10 +9,10 @@ const ModalOverlay = styled.div`
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.7);
+  background: rgba(0, 0, 0, 0.8);
   display: flex;
-  justify-content: center;
   align-items: center;
+  justify-content: center;
   z-index: 1000;
 `;
 
@@ -20,174 +20,395 @@ const ModalContent = styled.div`
   background: #282828;
   padding: 2rem;
   border-radius: 8px;
-  width: 100%;
-  max-width: 500px;
-  color: white;
+  width: 90%;
+  max-width: 450px;
   max-height: 90vh;
   overflow-y: auto;
-`;
+  margin: 20px;
 
-const Form = styled.form`
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
+  @media (max-width: 768px) {
+    padding: 1.5rem;
+    width: 95%;
+  }
+
+  /* Style de la scrollbar */
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: #1a1a1a;
+    border-radius: 4px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #404040;
+    border-radius: 4px;
+  }
 `;
 
 const FormGroup = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+  max-width: 400px;
+
+  @media (max-width: 768px) {
+    margin-bottom: 1rem;
+    max-width: 100%;
+  }
 `;
 
 const Label = styled.label`
-  font-size: 0.875rem;
-  color: #b3b3b3;
+  display: block;
+  color: white;
+  margin-bottom: 0.5rem;
 `;
 
 const Input = styled.input`
+  width: 100%;
   padding: 0.75rem;
-  background: #3e3e3e;
-  border: 1px solid #3e3e3e;
+  background: #3E3E3E;
+  border: 1px solid #404040;
   border-radius: 4px;
   color: white;
   font-size: 0.875rem;
+  max-width: 400px;
 
   &:focus {
     outline: none;
-    border-color: #1db954;
+    border-color: #1DB954;
   }
 
-  &[type="file"] {
-    padding: 0.5rem;
-    &::-webkit-file-upload-button {
-      visibility: hidden;
-      width: 0;
-    }
-    &::before {
-      content: 'Choisir un fichier';
-      display: inline-block;
-      background: #1DB954;
-      color: white;
-      padding: 0.5rem 1rem;
-      border-radius: 3px;
-      cursor: pointer;
-      margin-right: 1rem;
-    }
+  @media (max-width: 768px) {
+    padding: 0.625rem;
+    max-width: 100%;
   }
 `;
 
 const Select = styled.select`
+  width: 100%;
   padding: 0.75rem;
-  background: #3e3e3e;
-  border: 1px solid #3e3e3e;
+  background: #3E3E3E;
+  border: 1px solid #404040;
   border-radius: 4px;
   color: white;
   font-size: 0.875rem;
+  max-width: 400px;
 
   &:focus {
     outline: none;
-    border-color: #1db954;
+    border-color: #1DB954;
+  }
+
+  @media (max-width: 768px) {
+    padding: 0.625rem;
+    max-width: 100%;
   }
 `;
 
-const ButtonGroup = styled.div`
-  display: flex;
-  justify-content: flex-end;
-  gap: 1rem;
-  margin-top: 1rem;
-`;
-
-const AudioPreview = styled.div`
-  margin-top: 0.5rem;
-  
-  audio {
-    width: 100%;
-  }
-`;
-
-const FileInfo = styled.div`
-  margin-top: 0.5rem;
+const ErrorMessage = styled.div`
+  color: #ff4444;
   font-size: 0.875rem;
-  color: #b3b3b3;
+  margin-top: 0.5rem;
 `;
 
-export default function TrackModal({ isOpen, onClose, onSubmit, track, albums, artists }) {
+const SelectWrapper = styled.div`
+  position: relative;
+  width: 100%;
+  &.artist-select-wrapper,
+  &.album-select-wrapper {
+    z-index: 1001;
+  }
+`;
+
+const ArtistList = styled.ul`
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: #3E3E3E;
+  border: 1px solid #404040;
+  border-radius: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 1000;
+`;
+
+const ArtistItem = styled.li`
+  padding: 0.75rem;
+  cursor: pointer;
+  color: white;
+
+  &:hover {
+    background: #4E4E4E;
+  }
+
+  &.new-artist {
+    border-top: 1px solid #404040;
+    color: #1DB954;
+  }
+`;
+
+const TrackModal = ({ isOpen, onClose, onSubmit, track }) => {
   const [formData, setFormData] = useState({
     title: '',
-    albumId: '',
     artistId: '',
+    artistName: '',
+    albumId: '',
+    albumTitle: '',
     audioFile: null,
-    audioUrl: '',
-    genres: [],
-    explicit: false,
-    featuring: []
+    genres: ''
   });
-
-  const [fileInfo, setFileInfo] = useState(null);
-  const [newAlbumTitle, setNewAlbumTitle] = useState('');
-  const [newArtistName, setNewArtistName] = useState('');
-  const [showNewAlbumInput, setShowNewAlbumInput] = useState(false);
-  const [showNewArtistInput, setShowNewArtistInput] = useState(false);
+  const [error, setError] = useState('');
+  const [artistSearch, setArtistSearch] = useState('');
+  const [albumSearch, setAlbumSearch] = useState('');
+  const [artists, setArtists] = useState([]);
+  const [albums, setAlbums] = useState([]);
+  const [showArtistList, setShowArtistList] = useState(false);
+  const [showAlbumList, setShowAlbumList] = useState(false);
+  const [selectedArtist, setSelectedArtist] = useState(null);
+  const [selectedAlbum, setSelectedAlbum] = useState(null);
+  const [initialArtist, setInitialArtist] = useState(null);
+  const artistWrapperRef = useRef(null);
+  const albumWrapperRef = useRef(null);
 
   useEffect(() => {
     if (track) {
       setFormData({
-        ...track,
-        audioFile: null
+        title: track.title || '',
+        artistId: track.artistId || '',
+        artistName: track.artist || '',
+        albumId: track.albumId || '',
+        albumTitle: track.album || '',
+        genres: Array.isArray(track.genres) ? track.genres.join(', ') : ''
       });
+      setArtistSearch(track.artist || '');
+      setAlbumSearch(track.album || '');
+      setSelectedArtist({
+        id: track.artistId,
+        name: track.artist
+      });
+      setInitialArtist({
+        id: track.artistId,
+        name: track.artist
+      });
+      setSelectedAlbum({
+        id: track.albumId,
+        title: track.album
+      });
+    } else {
+      setFormData({
+        title: '',
+        artistId: '',
+        artistName: '',
+        albumId: '',
+        albumTitle: '',
+        audioFile: null,
+        genres: ''
+      });
+      setArtistSearch('');
+      setAlbumSearch('');
+      setSelectedArtist(null);
+      setSelectedAlbum(null);
+      setInitialArtist(null);
     }
   }, [track]);
 
-  const handleChange = (e) => {
-    const { name, value, type, files, checked } = e.target;
-    
-    if (type === 'file') {
-      const file = files[0];
-      if (file) {
-        setFileInfo({
-          name: file.name,
-          size: (file.size / (1024 * 1024)).toFixed(2) + ' MB',
-          type: file.type
-        });
-        
-        setFormData(prev => ({
-          ...prev,
-          audioFile: file,
-          title: prev.title || file.name.replace(/\.[^/.]+$/, '')
-        }));
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (artistWrapperRef.current && !artistWrapperRef.current.contains(event.target)) {
+        setShowArtistList(false);
       }
-    } else if (type === 'checkbox') {
-      setFormData(prev => ({
-        ...prev,
-        [name]: checked
-      }));
-    } else if (name === 'genres') {
-      setFormData(prev => ({
-        ...prev,
-        genres: value.split(',').map(g => g.trim()).filter(Boolean)
-      }));
-    } else if (name === 'featuring') {
-      const selectedOptions = Array.from(e.target.selectedOptions).map(option => option.value);
-      setFormData(prev => ({
-        ...prev,
-        featuring: selectedOptions
-      }));
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        [name]: value
-      }));
+      if (albumWrapperRef.current && !albumWrapperRef.current.contains(event.target)) {
+        setShowAlbumList(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setShowArtistList(false);
+      setShowAlbumList(false);
     }
+  }, [isOpen]);
+
+  const searchArtists = async (query) => {
+    if (!query.trim()) {
+      setArtists([]);
+      return;
+    }
+
+    try {
+      const response = await api.fetchWithAuth(`/api/artists?name=${encodeURIComponent(query)}`);
+      if (response.success) {
+        setArtists(response.data);
+      }
+    } catch (error) {
+      console.error('Erreur lors de la recherche des artistes:', error);
+    }
+  };
+
+  const searchAlbums = async (query) => {
+    if (!query.trim()) {
+      setAlbums([]);
+      return;
+    }
+
+    try {
+      const response = await api.fetchWithAuth(`/api/albums?title=${encodeURIComponent(query)}`);
+      if (response.success) {
+        setAlbums(response.data);
+      }
+    } catch (error) {
+      console.error('Erreur lors de la recherche des albums:', error);
+    }
+  };
+
+  const handleArtistSearch = (e) => {
+    const value = e.target.value;
+    setArtistSearch(value);
+    setShowArtistList(true);
+    searchArtists(value);
+  };
+
+  const handleAlbumSearch = (e) => {
+    const value = e.target.value;
+    setAlbumSearch(value);
+    setShowAlbumList(true);
+    searchAlbums(value);
+  };
+
+  const selectArtist = (artist) => {
+    setSelectedArtist(artist);
+    setArtistSearch(artist.name);
+    setFormData(prev => ({
+      ...prev,
+      artistId: artist.id,
+      artistName: artist.name
+    }));
+    setShowArtistList(false);
+  };
+
+  const selectAlbum = (album) => {
+    setSelectedAlbum(album);
+    setAlbumSearch(album.title);
+    setFormData(prev => ({
+      ...prev,
+      albumId: album.id,
+      albumTitle: album.title
+    }));
+    setShowAlbumList(false);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const submitData = {
-      ...formData,
-      newArtist: showNewArtistInput ? { name: newArtistName } : null,
-      newAlbum: showNewAlbumInput ? { title: newAlbumTitle } : null
-    };
-    onSubmit(submitData);
+    if (!formData.title.trim()) {
+      setError("Le titre de la piste est requis");
+      return;
+    }
+
+    if (!selectedArtist && !artistSearch.trim()) {
+      setError("L'artiste est requis");
+      return;
+    }
+
+    if (!selectedAlbum && !albumSearch.trim()) {
+      setError("L'album est requis");
+      return;
+    }
+
+    if (!track && !formData.audioFile) {
+      setError("Le fichier audio est requis");
+      return;
+    }
+
+    try {
+      let artistId = selectedArtist?.id;
+      let albumId = selectedAlbum?.id;
+
+      // Créer un nouvel artiste seulement si :
+      // - Nous ne sommes pas en mode édition OU l'artiste a été changé
+      // - ET aucun artiste existant n'est sélectionné
+      // - ET un nom d'artiste a été saisi
+      if (!artistId && artistSearch.trim() && 
+          (!track || (track && artistSearch !== initialArtist?.name))) {
+        const newArtistResponse = await api.createArtist(artistSearch.trim());
+        if (newArtistResponse.success) {
+          artistId = newArtistResponse.data._id;
+        } else {
+          throw new Error("Erreur lors de la création de l'artiste");
+        }
+      }
+
+      // Si nous sommes en mode édition et que l'artiste n'a pas changé, utiliser l'ID initial
+      if (track && artistSearch === initialArtist?.name) {
+        artistId = initialArtist.id;
+      }
+
+      // Créer un nouvel album seulement si nécessaire
+      if (!albumId && albumSearch.trim() && artistId) {
+        const newAlbumResponse = await api.fetchWithAuth('/api/albums', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: albumSearch.trim(),
+            artistId: artistId,
+            type: 'album',
+            releaseDate: new Date().toISOString()
+          })
+        });
+
+        if (newAlbumResponse.success) {
+          albumId = newAlbumResponse.data._id;
+        } else {
+          throw new Error("Erreur lors de la création de l'album");
+        }
+      }
+
+      let audioUrl = null;
+      let duration = 0;
+
+      // Upload du fichier audio seulement en création
+      if (!track && formData.audioFile) {
+        const uploadResponse = await api.uploadTrackAudio(formData.audioFile);
+        if (uploadResponse.success) {
+          audioUrl = uploadResponse.url;
+          duration = uploadResponse.duration;
+        }
+      }
+
+      // Préparer les données de la piste
+      const trackData = {
+        title: formData.title.trim(),
+        artistId: artistId,
+        albumId: albumId,
+        genres: formData.genres
+          ? formData.genres.split(',').map(g => g.trim()).filter(Boolean)
+          : []
+      };
+
+      // Ajouter audioUrl et duration seulement en création
+      if (!track) {
+        trackData.audioUrl = audioUrl;
+        trackData.duration = duration;
+        trackData.trackNumber = 1;
+      }
+
+      console.log('Données de la piste à envoyer:', trackData);
+
+      await onSubmit(trackData);
+      setError('');
+    } catch (error) {
+      console.error('Erreur complète:', error);
+      setError(error.message);
+    }
   };
 
   if (!isOpen) return null;
@@ -195,179 +416,119 @@ export default function TrackModal({ isOpen, onClose, onSubmit, track, albums, a
   return (
     <ModalOverlay onClick={onClose}>
       <ModalContent onClick={e => e.stopPropagation()}>
-        <h2>{track ? 'Modifier la piste' : 'Ajouter une piste'}</h2>
-        <Form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit}>
           <FormGroup>
-            <Label htmlFor="audioFile">Fichier audio</Label>
-            <Input
-              type="file"
-              id="audioFile"
-              name="audioFile"
-              accept="audio/*"
-              onChange={handleChange}
-              required={!track}
-            />
-            {fileInfo && (
-              <FileInfo>
-                <div>Nom: {fileInfo.name}</div>
-                <div>Taille: {fileInfo.size}</div>
-                <div>Type: {fileInfo.type}</div>
-              </FileInfo>
-            )}
-          </FormGroup>
-
-          <FormGroup>
-            <Label htmlFor="title">Titre</Label>
+            <Label>Titre *</Label>
             <Input
               type="text"
-              id="title"
-              name="title"
               value={formData.title}
-              onChange={handleChange}
-              required
+              onChange={e => setFormData(prev => ({ ...prev, title: e.target.value }))}
+              placeholder="Titre de la piste"
             />
           </FormGroup>
 
           <FormGroup>
-            <Label htmlFor="artistId">Artiste principal</Label>
-            {!showNewArtistInput ? (
-              <>
-                <Select
-                  id="artistId"
-                  name="artistId"
-                  value={formData.artistId}
-                  onChange={handleChange}
-                  required
-                >
-                  <option value="">Sélectionner un artiste</option>
-                  {artists?.map(artist => (
-                    <option key={artist._id} value={artist._id}>
-                      {artist.name}
-                    </option>
-                  ))}
-                </Select>
-                <Button type="button" onClick={() => setShowNewArtistInput(true)}>
-                  Créer un nouvel artiste
-                </Button>
-              </>
-            ) : (
-              <>
-                <Input
-                  type="text"
-                  value={newArtistName}
-                  onChange={(e) => setNewArtistName(e.target.value)}
-                  placeholder="Nom du nouvel artiste"
-                  required
-                />
-                <Button type="button" onClick={() => setShowNewArtistInput(false)}>
-                  Sélectionner un artiste existant
-                </Button>
-              </>
-            )}
-          </FormGroup>
-
-          <FormGroup>
-            <Label htmlFor="albumId">Album</Label>
-            {!showNewAlbumInput ? (
-              <>
-                <Select
-                  id="albumId"
-                  name="albumId"
-                  value={formData.albumId}
-                  onChange={handleChange}
-                  required
-                >
-                  <option value="">Sélectionner un album</option>
-                  {albums?.map(album => (
-                    <option key={album._id} value={album._id}>
-                      {album.title}
-                    </option>
-                  ))}
-                </Select>
-                <Button type="button" onClick={() => setShowNewAlbumInput(true)}>
-                  Créer un nouvel album
-                </Button>
-              </>
-            ) : (
-              <>
-                <Input
-                  type="text"
-                  value={newAlbumTitle}
-                  onChange={(e) => setNewAlbumTitle(e.target.value)}
-                  placeholder="Titre du nouvel album"
-                  required
-                />
-                <Button type="button" onClick={() => setShowNewAlbumInput(false)}>
-                  Sélectionner un album existant
-                </Button>
-              </>
-            )}
-          </FormGroup>
-
-          <FormGroup>
-            <Label htmlFor="genres">Genres (séparés par des virgules)</Label>
-            <Input
-              type="text"
-              id="genres"
-              name="genres"
-              value={formData.genres.join(', ')}
-              onChange={handleChange}
-              placeholder="Pop, Rock, Jazz..."
-            />
-          </FormGroup>
-
-          <FormGroup>
-            <Label htmlFor="featuring">Featuring</Label>
-            <Select
-              id="featuring"
-              name="featuring"
-              multiple
-              value={formData.featuring}
-              onChange={handleChange}
-              style={{ height: '100px' }}
-            >
-              {artists?.map(artist => (
-                <option key={artist._id} value={artist._id}>
-                  {artist.name}
-                </option>
-              ))}
-            </Select>
-          </FormGroup>
-
-          <FormGroup>
-            <Label>
+            <Label>Artiste *</Label>
+            <SelectWrapper ref={artistWrapperRef} className="artist-select-wrapper">
               <Input
-                type="checkbox"
-                name="explicit"
-                checked={formData.explicit}
-                onChange={handleChange}
+                type="text"
+                value={artistSearch}
+                onChange={handleArtistSearch}
+                onFocus={() => setShowArtistList(true)}
+                placeholder="Rechercher un artiste..."
               />
-              Contenu explicite
-            </Label>
+              {showArtistList && (artistSearch || artists.length > 0) && (
+                <ArtistList>
+                  {artists.map(artist => (
+                    <ArtistItem
+                      key={artist.id}
+                      onClick={() => selectArtist(artist)}
+                    >
+                      {artist.name}
+                    </ArtistItem>
+                  ))}
+                  {artistSearch && !artists.find(a => a.name.toLowerCase() === artistSearch.toLowerCase()) && (
+                    <ArtistItem
+                      className="new-artist"
+                      onClick={() => {
+                        setSelectedArtist(null);
+                        setShowArtistList(false);
+                      }}
+                    >
+                      + Créer "{artistSearch}"
+                    </ArtistItem>
+                  )}
+                </ArtistList>
+              )}
+            </SelectWrapper>
           </FormGroup>
 
-          {formData.audioUrl && (
+          <FormGroup>
+            <Label>Album *</Label>
+            <SelectWrapper ref={albumWrapperRef} className="album-select-wrapper">
+              <Input
+                type="text"
+                value={albumSearch}
+                onChange={handleAlbumSearch}
+                onFocus={() => setShowAlbumList(true)}
+                placeholder="Rechercher un album..."
+              />
+              {showAlbumList && (albumSearch || albums.length > 0) && (
+                <ArtistList>
+                  {albums.map(album => (
+                    <ArtistItem
+                      key={album.id}
+                      onClick={() => selectAlbum(album)}
+                    >
+                      {album.title}
+                    </ArtistItem>
+                  ))}
+                  {albumSearch && !albums.find(a => a.title.toLowerCase() === albumSearch.toLowerCase()) && (
+                    <ArtistItem
+                      className="new-artist"
+                      onClick={() => {
+                        setSelectedAlbum(null);
+                        setShowAlbumList(false);
+                      }}
+                    >
+                      + Créer "{albumSearch}"
+                    </ArtistItem>
+                  )}
+                </ArtistList>
+              )}
+            </SelectWrapper>
+          </FormGroup>
+
+          {!track && (
             <FormGroup>
-              <Label>Aperçu</Label>
-              <AudioPreview>
-                <audio controls>
-                  <source src={formData.audioUrl} type="audio/mpeg" />
-                  Votre navigateur ne supporte pas l'élément audio.
-                </audio>
-              </AudioPreview>
+              <Label>Fichier audio *</Label>
+              <Input
+                type="file"
+                accept="audio/*"
+                onChange={e => setFormData(prev => ({ ...prev, audioFile: e.target.files[0] }))}
+              />
             </FormGroup>
           )}
 
-          <ButtonGroup>
-            <Button type="button" onClick={onClose}>
-              Annuler
-            </Button>
-            <Button type="submit" $primary>
-              {track ? 'Mettre à jour' : 'Créer'}
-            </Button>
-          </ButtonGroup>
-        </Form>
+          <FormGroup>
+            <Label>Genres (séparés par des virgules)</Label>
+            <Input
+              type="text"
+              value={formData.genres}
+              onChange={e => setFormData(prev => ({ ...prev, genres: e.target.value }))}
+              placeholder="Rock, Pop, Jazz..."
+            />
+          </FormGroup>
+
+          {error && <ErrorMessage>{error}</ErrorMessage>}
+
+          <Button type="submit" style={{ marginTop: '1.5rem' }}>
+            {track ? 'Modifier' : 'Créer'}
+          </Button>
+        </form>
       </ModalContent>
     </ModalOverlay>
   );
-} 
+};
+
+export default TrackModal; 

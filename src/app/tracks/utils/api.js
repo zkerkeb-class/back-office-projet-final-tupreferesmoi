@@ -3,7 +3,6 @@ export const createArtist = async (name) => {
     name,
     genres: [],
     popularity: 0,
-    type: 'artist',
     image: {
       thumbnail: null,
       medium: null,
@@ -60,15 +59,26 @@ export const fetchWithAuth = async (url, options = {}) => {
 
 export const uploadTrackAudio = async (file) => {
   try {
-    // Lecture des métadonnées du fichier
-    const metadata = await readAudioMetadata(file);
+    const formData = new FormData();
+    formData.append('audio', file);
 
-    // Pour le moment, on simule un upload réussi
+    const response = await fetchWithAuth('/api/backoffice/upload/audio', {
+      method: 'POST',
+      body: formData,
+      headers: {
+        // Ne pas définir Content-Type ici, il sera automatiquement défini avec le boundary correct
+        'Accept': 'application/json',
+      }
+    });
+
+    if (!response.success) {
+      throw new Error(response.message || "Erreur lors de l'upload du fichier audio");
+    }
+
     return {
-      urls: {
-        audio: URL.createObjectURL(file) // Utiliser une URL temporaire pour le fichier
-      },
-      metadata
+      success: true,
+      url: response.url,
+      duration: response.duration
     };
   } catch (error) {
     console.error('Erreur lors de l\'upload:', error);

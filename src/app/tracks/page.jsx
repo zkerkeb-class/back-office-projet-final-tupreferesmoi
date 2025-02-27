@@ -14,15 +14,13 @@ export default function TracksPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [tracks, setTracks] = useState([]);
-  const [albums, setAlbums] = useState([]);
-  const [artists, setArtists] = useState([]);
-  const [selectedTrack, setSelectedTrack] = useState(null);
+  const [totalItems, setTotalItems] = useState(0);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedTrack, setSelectedTrack] = useState(null);
   const [error, setError] = useState('');
   const [totalPages, setTotalPages] = useState(1);
   const itemsPerPage = 10;
 
-  // Récupérer la page depuis l'URL ou utiliser 1 par défaut
   const currentPage = parseInt(searchParams.get('page') || '1');
 
   const updatePageInUrl = (newPage) => {
@@ -31,18 +29,6 @@ export default function TracksPage() {
     router.push(`/tracks?${params.toString()}`);
   };
 
-  const [editForm, setEditForm] = useState({
-    id: '',
-    title: '',
-    albumId: '',
-    featuring: '',
-    duration: '',
-    trackNumber: '',
-    audioUrl: '',
-    audioFile: null,
-    albums: []
-  });
-
   useEffect(() => {
     if (!loading && !user) {
       router.push('/login');
@@ -50,8 +36,6 @@ export default function TracksPage() {
     }
     if (user) {
       fetchTracks();
-      fetchAlbums();
-      fetchArtists();
     }
   }, [user, loading, currentPage]);
 
@@ -59,31 +43,18 @@ export default function TracksPage() {
     try {
       const response = await api.fetchWithAuth(`/api/tracks?page=${currentPage}&limit=${itemsPerPage}`);
       
-      const formattedTracks = await Promise.all(
-        response.data.map(async (track) => {
-          const trackDetails = await api.fetchWithAuth(`/api/tracks/${track.id}`);
-          const trackData = trackDetails.data;
-
-          return {
-            id: trackData.id,
-            title: trackData.title || 'Piste Inconnue',
-            album: trackData.albumId?.title || 'Album Inconnu',
-            artist: trackData.artistId?.name || 'Artiste Inconnu',
-            albumId: trackData.albumId?._id || '',
-            artistId: trackData.artistId?._id || '',
-            duration: trackData.duration || 0,
-            trackNumber: trackData.trackNumber || 1,
-            audioUrl: trackData.audioUrl || null,
-            featuring: trackData.featuring || [],
-            genres: trackData.genres || [],
-            popularity: trackData.popularity || 0,
-            explicit: trackData.explicit || false
-          };
-        })
-      );
+      const formattedTracks = response.data.map(track => ({
+        id: track.id,
+        title: track.title || 'Piste Inconnue',
+        album: track.album?.title || 'Album Inconnu',
+        artist: track.artist || 'Artiste Inconnu',
+        duration: track.duration || 0,
+        audioUrl: track.audioUrl || null
+      }));
       
       setTracks(formattedTracks);
-      setTotalPages(Math.ceil(response.pagination?.totalItems / itemsPerPage) || 1);
+      setTotalItems(response.pagination?.totalItems || 0);
+      setTotalPages(response.pagination?.totalPages || 1);
       setError('');
     } catch (error) {
       setError(error.message);
@@ -91,36 +62,13 @@ export default function TracksPage() {
     }
   };
 
-  const fetchAlbums = async () => {
-    try {
-      const response = await api.fetchWithAuth('/api/albums');
-      setAlbums(response.data);
-    } catch (error) {
-      console.error('Erreur lors de la récupération des albums:', error);
-    }
-  };
-
-  const fetchArtists = async () => {
-    try {
-      const response = await api.fetchWithAuth('/api/artists');
-      setArtists(response.data);
-    } catch (error) {
-      console.error('Erreur lors de la récupération des artistes:', error);
-    }
+  const handleModalClose = () => {
+    setIsModalOpen(false);
+    setSelectedTrack(null);
   };
 
   const handleEdit = (track) => {
     setSelectedTrack(track);
-    setEditForm({
-      ...editForm,
-      id: track.id,
-      title: track.title,
-      albumId: track.albumId,
-      featuring: Array.isArray(track.featuring) ? track.featuring.join(', ') : '',
-      duration: track.duration,
-      trackNumber: track.trackNumber,
-      audioUrl: track.audioUrl
-    });
     setIsModalOpen(true);
   };
 
@@ -136,127 +84,25 @@ export default function TracksPage() {
     }
   };
 
-  const handleAudioUpload = async (file) => {
+  const handleModalSubmit = async (formData) => {
     try {
-      const urls = await api.uploadTrackAudio(file, editForm.title);
-      if (urls?.audio) {
-        setEditForm(prev => ({
-          ...prev,
-          audioUrl: urls.audio
-        }));
-      }
-      return urls;
-    } catch (error) {
-      setError("Erreur lors de l'upload du fichier audio: " + error.message);
-      throw error;
-    }
-  };
-
-  const handleSubmit = async (formData) => {
-    try {
-      let audioUrl = formData.audioUrl;
-      let duration = formData.duration;
-      let artistId = formData.artistId;
-      let albumId = formData.albumId;
-
-      // Si un fichier audio a été sélectionné, l'uploader d'abord
-      if (formData.audioFile) {
-        const uploadResult = await api.uploadTrackAudio(formData.audioFile);
-        audioUrl = uploadResult.urls.audio;
-        duration = uploadResult.metadata.duration;
-      }
-
-      // Création d'un nouvel artiste si nécessaire
-      if (formData.newArtist) {
-        try {
-          console.log('Tentative de création d\'artiste avec le nom:', formData.newArtist.name);
-          
-          const newArtist = await api.createArtist(formData.newArtist.name);
-          
-          console.log('Réponse création artiste:', newArtist);
-
-          if (newArtist.data && newArtist.data._id) {
-            artistId = newArtist.data._id;
-            console.log('Nouvel artiste créé avec ID:', artistId);
-          } else {
-            throw new Error('ID de l\'artiste non trouvé dans la réponse');
-          }
-        } catch (artistError) {
-          console.error('Erreur création artiste:', artistError);
-          throw new Error(`Erreur lors de la création de l'artiste: ${artistError.message}`);
-        }
-      }
-
-      // Création d'un nouvel album si nécessaire
-      if (formData.newAlbum && artistId) {
-        try {
-          const albumData = {
-            title: formData.newAlbum.title,
-            artistId: artistId,
-            type: 'album',
-            releaseDate: new Date().toISOString(),
-            genres: []
-          };
-
-          console.log('Tentative de création d\'album avec:', albumData);
-
-          const newAlbum = await api.fetchWithAuth('/api/albums', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(albumData)
-          });
-
-          console.log('Réponse création album:', newAlbum);
-
-          if (newAlbum.data && newAlbum.data._id) {
-            albumId = newAlbum.data._id;
-            console.log('Nouvel album créé avec ID:', albumId);
-          } else {
-            throw new Error('ID de l\'album non trouvé dans la réponse');
-          }
-        } catch (albumError) {
-          console.error('Erreur création album:', albumError);
-          throw new Error(`Erreur lors de la création de l'album: ${albumError.message}`);
-        }
-      }
-      
-      const trackData = {
-        title: formData.title,
-        albumId: albumId,
-        artistId: artistId,
-        duration: duration,
-        audioUrl: audioUrl,
-        genres: formData.genres,
-        featuring: formData.featuring,
-        explicit: formData.explicit
-      };
-
-      console.log('Données de la piste à créer:', trackData);
-
-      let response;
-      if (formData.id) {
-        response = await api.fetchWithAuth(`/api/tracks/${formData.id}`, {
+      if (selectedTrack) {
+        await api.fetchWithAuth(`/api/tracks/${selectedTrack.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(trackData)
+          body: JSON.stringify(formData)
         });
       } else {
-        response = await api.fetchWithAuth('/api/tracks', {
+        await api.fetchWithAuth('/api/tracks', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(trackData)
+          body: JSON.stringify(formData)
         });
       }
 
-      if (response.success) {
-        await fetchTracks();
-        setIsModalOpen(false);
-        setError('');
-      } else {
-        throw new Error('La mise à jour n\'a pas retourné les données attendues');
-      }
+      handleModalClose();
+      fetchTracks();
     } catch (error) {
-      console.error('Erreur complète:', error);
       setError(error.message);
     }
   };
@@ -268,33 +114,13 @@ export default function TracksPage() {
     <Container>
       <Header>
         <div>
-          <Title>Sons</Title>
-          <span style={{ color: '#b3b3b3', fontSize: '0.875rem' }}>
-            {tracks.length} sur {totalPages * itemsPerPage} pistes
-          </span>
+          <Title>Pistes ({totalItems})</Title>
+          {error && <ErrorMessage>{error}</ErrorMessage>}
         </div>
-        <Button onClick={() => {
-          setSelectedTrack(null);
-          setEditForm({
-            ...editForm,
-            id: '',
-            title: '',
-            albumId: '',
-            featuring: '',
-            duration: '',
-            trackNumber: '',
-            audioUrl: '',
-            audioFile: null
-          });
-          setIsModalOpen(true);
-        }}>
-          Nouveau son
-        </Button>
+        <Button onClick={() => setIsModalOpen(true)}>Ajouter une piste</Button>
       </Header>
 
-      {error && <ErrorMessage>{error}</ErrorMessage>}
-
-      <TrackTable 
+      <TrackTable
         tracks={tracks}
         onEdit={handleEdit}
         onDelete={handleDelete}
@@ -308,13 +134,9 @@ export default function TracksPage() {
 
       <TrackModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        formData={editForm}
-        onChange={setEditForm}
-        onSubmit={handleSubmit}
-        onAudioUpload={handleAudioUpload}
-        albums={albums}
-        artists={artists}
+        onClose={handleModalClose}
+        onSubmit={handleModalSubmit}
+        track={selectedTrack}
       />
     </Container>
   );
