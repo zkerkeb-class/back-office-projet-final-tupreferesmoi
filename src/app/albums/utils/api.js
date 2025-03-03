@@ -17,19 +17,29 @@ export const getAuthToken = () => {
 
 export const fetchWithAuth = async (url, options = {}) => {
   const token = getAuthToken();
-  if (!token) throw new Error('Non authentifié');
+  if (!token) {
+    throw new Error('Non authentifié');
+  }
 
-  const response = await fetch(url, {
-    ...options,
-    headers: {
-      ...options.headers,
-      'Authorization': `Bearer ${token}`,
-    },
-  });
+  try {
+    const response = await fetch(url, {
+      ...options,
+      headers: {
+        ...options.headers,
+        'Authorization': `Bearer ${token}`,
+      },
+    });
 
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.message || 'Une erreur est survenue');
-  return data;
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.message || 'Une erreur est survenue');
+    }
+    
+    return data;
+  } catch (error) {
+    throw new Error(error.message || 'Une erreur est survenue lors de la requête');
+  }
 };
 
 export const uploadAlbumCover = async (file, albumTitle) => {
@@ -58,4 +68,33 @@ export const formatAlbumData = (album) => ({
   type: album.type,
   trackCount: album.trackCount || 0,
   coverImage: album.coverImage || null
-}); 
+});
+
+// Récupérer les pistes disponibles pour un album
+export const getAvailableTracksForAlbum = async (albumId) => {
+  return await fetchWithAuth(`/api/albums/${albumId}/available-tracks`);
+};
+
+// Mettre à jour les pistes d'un album
+export const updateAlbumTracks = async (albumId, trackIds) => {
+  return await fetchWithAuth(`/api/albums/${albumId}/tracks`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ trackIds })
+  });
+};
+
+// Récupérer les pistes d'un artiste
+export const getArtistTracks = async (artistId) => {
+  return await fetchWithAuth(`/api/artists/${artistId}/top-tracks`);
+};
+
+export const searchArtists = async (query) => {
+  if (!query || query.length < 2) return { success: true, data: [] };
+  
+  try {
+    return await fetchWithAuth(`/api/artists/search?query=${encodeURIComponent(query)}`);
+  } catch (error) {
+    return { success: false, data: [] };
+  }
+}; 

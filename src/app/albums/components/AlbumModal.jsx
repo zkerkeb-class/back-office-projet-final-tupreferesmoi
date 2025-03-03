@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
 import { Button } from '../styles/AlbumStyles';
 import * as api from '../utils/api';
+import EditTrackManager from './EditTrackManager';
 
 const ModalOverlay = styled.div`
   position: fixed;
@@ -98,7 +99,7 @@ const FormSection = styled.div`
 
 const FormGroup = styled.div`
   width: 100%;
-  margin-bottom: 1rem;
+    margin-bottom: 1rem;
 `;
 
 const Label = styled.label`
@@ -367,225 +368,160 @@ const TracksList = styled.div`
   }
 `;
 
+const ArtistSelect = styled(SelectWrapper)`
+  margin-bottom: 1rem;
+`;
+
+const ArtistDropdown = styled(DropdownList)`
+  max-height: 300px;
+`;
+
+const ArtistItem = styled(DropdownItem)`
+  padding: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+`;
+
 const AlbumModal = ({ isOpen, onClose, onSubmit, album }) => {
   const [formData, setFormData] = useState({
     title: '',
-    genres: '',
+    artistId: '',
     releaseDate: '',
     type: 'album',
-    artistId: '',
-    artistName: ''
+    genres: [],
+    coverImage: null
   });
-  const [error, setError] = useState('');
-  const [artistSearch, setArtistSearch] = useState('');
-  const [artists, setArtists] = useState([]);
-  const [showArtistList, setShowArtistList] = useState(false);
-  const [selectedArtist, setSelectedArtist] = useState(null);
-  const [initialArtist, setInitialArtist] = useState(null);
-  const [availableTracks, setAvailableTracks] = useState([]);
   const [selectedTracks, setSelectedTracks] = useState([]);
-  const [showTracksList, setShowTracksList] = useState(false);
-  const [trackSearch, setTrackSearch] = useState('');
-  
-  const artistWrapperRef = useRef(null);
-  const tracksWrapperRef = useRef(null);
+  const [error, setError] = useState('');
+  const [artists, setArtists] = useState([]);
+  const [showArtistDropdown, setShowArtistDropdown] = useState(false);
+  const [artistSearch, setArtistSearch] = useState('');
+  const artistSelectRef = useRef(null);
 
   useEffect(() => {
     if (album) {
       setFormData({
         title: album.title || '',
-        genres: Array.isArray(album.genres) ? album.genres.join(', ') : '',
+        artistId: album.artistId || '',
         releaseDate: album.releaseDate ? new Date(album.releaseDate).toISOString().split('T')[0] : '',
         type: album.type || 'album',
-        artistId: album.artistId || '',
-        artistName: album.artist || ''
-      });
-      setSelectedArtist({
-        id: album.artistId,
-        name: album.artist
-      });
-      setInitialArtist({
-        id: album.artistId,
-        name: album.artist
+        genres: album.genres || [],
+        coverImage: album.coverImage?.medium || null
       });
       setArtistSearch(album.artist || '');
-      
-      // Charger les pistes actuelles de l'album
-      if (album.tracks && Array.isArray(album.tracks)) {
-        const formattedTracks = album.tracks.map(track => ({
-          id: track._id || track.id,
-          title: track.title
-        }));
-        setSelectedTracks(formattedTracks);
-      }
     } else {
       setFormData({
         title: '',
-        genres: '',
+        artistId: '',
         releaseDate: '',
         type: 'album',
-        artistId: '',
-        artistName: ''
+        genres: [],
+        coverImage: null
       });
-      setSelectedArtist(null);
-      setInitialArtist(null);
       setArtistSearch('');
-      setSelectedTracks([]);
     }
   }, [album]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (artistWrapperRef.current && !artistWrapperRef.current.contains(event.target)) {
-        setShowArtistList(false);
-      }
-      if (tracksWrapperRef.current && !tracksWrapperRef.current.contains(event.target)) {
-        setShowTracksList(false);
+      if (artistSelectRef.current && !artistSelectRef.current.contains(event.target)) {
+        setShowArtistDropdown(false);
       }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  useEffect(() => {
-    if (!isOpen) {
-      setShowArtistList(false);
-      setShowTracksList(false);
-    }
-  }, [isOpen]);
-
-  useEffect(() => {
-    const fetchArtistTracks = async () => {
-      if (selectedArtist?.id) {
-        try {
-          const response = await api.fetchWithAuth(`/api/tracks?artistId=${selectedArtist.id}`);
-          if (response.success) {
-            setAvailableTracks(response.data);
-          }
-        } catch (error) {
-          console.error('Erreur lors de la récupération des pistes:', error);
-        }
-      } else {
-        setAvailableTracks([]);
-      }
-    };
-
-    fetchArtistTracks();
-  }, [selectedArtist]);
-
   const searchArtists = async (query) => {
-    if (!query.trim()) {
+    if (!query.trim() || query.length < 2) {
       setArtists([]);
       return;
     }
 
     try {
-      const response = await api.fetchWithAuth(`/api/artists?name=${encodeURIComponent(query)}`);
+      const response = await api.searchArtists(query);
       if (response.success) {
         setArtists(response.data);
+      } else {
+        setArtists([]);
       }
     } catch (error) {
       console.error('Erreur lors de la recherche des artistes:', error);
+      setArtists([]);
     }
   };
 
   const handleArtistSearch = (e) => {
     const value = e.target.value;
     setArtistSearch(value);
-    setShowArtistList(true);
-    searchArtists(value);
+    if (value.length >= 2) {
+      setShowArtistDropdown(true);
+      searchArtists(value);
+    } else {
+      setShowArtistDropdown(false);
+      setArtists([]);
+    }
   };
 
   const selectArtist = (artist) => {
-    setSelectedArtist(artist);
-    setArtistSearch(artist.name);
     setFormData(prev => ({
       ...prev,
-      artistId: artist.id,
-      artistName: artist.name
+      artistId: artist._id
     }));
-    setShowArtistList(false);
-    setSelectedTracks([]); // Réinitialiser les pistes sélectionnées
-  };
-
-  const handleTrackSearch = (e) => {
-    setTrackSearch(e.target.value);
-    setShowTracksList(true);
-  };
-
-  const toggleTrack = (track) => {
-    setSelectedTracks(prev => {
-      const isSelected = prev.some(t => t.id === track.id);
-      if (isSelected) {
-        return prev.filter(t => t.id !== track.id);
-      } else {
-        return [...prev, track];
-      }
-    });
+    setArtistSearch(artist.name);
+    setShowArtistDropdown(false);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.title.trim()) {
-      setError("Le titre de l'album est requis");
-      return;
-    }
-
-    if (!selectedArtist && !artistSearch.trim()) {
-      setError("L'artiste est requis");
-      return;
-    }
-
     try {
-      let artistId = selectedArtist?.id;
-
-      // Créer un nouvel artiste seulement si :
-      // - Nous ne sommes pas en mode édition OU l'artiste a été changé
-      // - ET aucun artiste existant n'est sélectionné
-      // - ET un nom d'artiste a été saisi
-      if (!artistId && artistSearch.trim() && 
-          (!album || (album && artistSearch !== initialArtist?.name))) {
-        const newArtistResponse = await api.createArtist(artistSearch.trim());
-        if (newArtistResponse.success) {
-          artistId = newArtistResponse.data._id;
-        } else {
-          throw new Error("Erreur lors de la création de l'artiste");
-        }
+      // Vérifier que tous les champs requis sont remplis
+      if (!formData.title || !formData.releaseDate || !formData.type) {
+        throw new Error('Tous les champs requis doivent être remplis');
       }
 
-      // Si nous sommes en mode édition et que l'artiste n'a pas changé, utiliser l'ID initial
-      if (album && artistSearch === initialArtist?.name) {
-        artistId = initialArtist.id;
+      if (!album && !formData.artistId) {
+        throw new Error('Veuillez sélectionner un artiste');
       }
 
-      const albumData = {
-        title: formData.title.trim(),
-        artistId: artistId,
-        type: formData.type || 'album',
-        releaseDate: formData.releaseDate || new Date().toISOString(),
-        genres: formData.genres
-          ? formData.genres.split(',').map(g => g.trim()).filter(Boolean)
-          : [],
-        coverImage: null,
-        tracks: selectedTracks.map(track => track.id)
+      // Préparer les données à envoyer (sans l'image)
+      const dataToSubmit = {
+        title: formData.title,
+        releaseDate: formData.releaseDate,
+        type: formData.type,
+        genres: formData.genres,
+        artistId: formData.artistId || album?.artistId
       };
 
-      await onSubmit(albumData);
-      setError('');
+      // Soumettre les données de l'album
+      await onSubmit(dataToSubmit);
+
+      // Mettre à jour les pistes si c'est une édition et qu'il y a des changements
+      if (album?.id && selectedTracks.length > 0) {
+        await api.updateAlbumTracks(album.id, selectedTracks);
+      }
+
+      onClose();
     } catch (error) {
-      console.error('Erreur complète:', error);
       setError(error.message);
     }
   };
 
-  if (!isOpen) return null;
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
 
-  const filteredTracks = availableTracks.filter(track => 
-    track.title.toLowerCase().includes(trackSearch.toLowerCase())
-  );
+  const handleTracksChange = (trackIds) => {
+    setSelectedTracks(trackIds);
+  };
+
+  if (!isOpen) return null;
 
   return (
     <ModalOverlay onClick={onClose}>
@@ -598,53 +534,68 @@ const AlbumModal = ({ isOpen, onClose, onSubmit, album }) => {
                 <Label>Titre *</Label>
                 <Input
                   type="text"
+                  name="title"
                   value={formData.title}
-                  onChange={e => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                  onChange={handleChange}
                   placeholder="Titre de l'album"
+                  required
                 />
               </FormGroup>
 
               <FormGroup>
                 <Label>Artiste *</Label>
-                <SelectWrapper ref={artistWrapperRef} className="artist-select-wrapper">
+                {album ? (
                   <Input
                     type="text"
-                    value={artistSearch}
-                    onChange={handleArtistSearch}
-                    onFocus={() => setShowArtistList(true)}
-                    placeholder="Rechercher un artiste..."
+                    value={album.artist || ''}
+                    disabled
+                    placeholder="Artiste"
                   />
-                  {showArtistList && (artistSearch || artists.length > 0) && (
-                    <DropdownList>
-                      {artists.map(artist => (
-                        <DropdownItem
-                          key={artist.id}
-                          onClick={() => selectArtist(artist)}
-                        >
-                          {artist.name}
-                        </DropdownItem>
-                      ))}
-                      {artistSearch && !artists.find(a => a.name.toLowerCase() === artistSearch.toLowerCase()) && (
-                        <DropdownItem
-                          className="new-item"
-                          onClick={() => {
-                            setSelectedArtist(null);
-                            setShowArtistList(false);
-                          }}
-                        >
-                          + Créer "{artistSearch}"
-                        </DropdownItem>
-                      )}
-                    </DropdownList>
-                  )}
-                </SelectWrapper>
+                ) : (
+                  <SelectWrapper ref={artistSelectRef} className="artist-select-wrapper">
+                    <Input
+                      type="text"
+                      value={artistSearch}
+                      onChange={handleArtistSearch}
+                      onFocus={() => setShowArtistDropdown(true)}
+                      placeholder="Rechercher un artiste..."
+                      required
+                    />
+                    {showArtistDropdown && artists.length > 0 && (
+                      <ArtistDropdown>
+                        {artists.map((artist) => (
+                          <ArtistItem
+                            key={artist._id}
+                            onClick={() => selectArtist(artist)}
+                            className={formData.artistId === artist._id ? 'selected' : ''}
+                          >
+                            {artist.name}
+                          </ArtistItem>
+                        ))}
+                      </ArtistDropdown>
+                    )}
+                  </SelectWrapper>
+                )}
+              </FormGroup>
+
+              <FormGroup>
+                <Label>Date de sortie *</Label>
+                <Input
+                  type="date"
+                  name="releaseDate"
+                  value={formData.releaseDate}
+                  onChange={handleChange}
+                  required
+                />
               </FormGroup>
 
               <FormGroup>
                 <Label>Type *</Label>
                 <Select
+                  name="type"
                   value={formData.type}
-                  onChange={e => setFormData(prev => ({ ...prev, type: e.target.value }))}
+                  onChange={handleChange}
+                  required
                 >
                   <option value="album">Album</option>
                   <option value="single">Single</option>
@@ -653,107 +604,33 @@ const AlbumModal = ({ isOpen, onClose, onSubmit, album }) => {
               </FormGroup>
 
               <FormGroup>
-                <Label>Date de sortie *</Label>
-                <Input
-                  type="date"
-                  value={formData.releaseDate}
-                  onChange={e => setFormData(prev => ({ ...prev, releaseDate: e.target.value }))}
-                />
-              </FormGroup>
-
-              <FormGroup>
                 <Label>Genres (séparés par des virgules)</Label>
                 <Input
                   type="text"
-                  value={formData.genres}
-                  onChange={e => setFormData(prev => ({ ...prev, genres: e.target.value }))}
-                  placeholder="Rock, Pop, Jazz..."
+                  name="genres"
+                  value={Array.isArray(formData.genres) ? formData.genres.join(', ') : formData.genres}
+                  onChange={(e) => setFormData(prev => ({
+                    ...prev,
+                    genres: e.target.value.split(',').map(g => g.trim()).filter(Boolean)
+                  }))}
+                  placeholder="Pop, Rock, Jazz..."
                 />
               </FormGroup>
 
               {error && <ErrorMessage>{error}</ErrorMessage>}
 
-              <ButtonContainer>
-                <Button type="submit">
-                  {album ? 'Modifier' : 'Créer'}
-                </Button>
-              </ButtonContainer>
+              <Button type="submit">
+                {album ? 'Mettre à jour' : 'Créer'}
+              </Button>
             </FormSection>
 
-            <TracksSection>
-              <TracksHeader>
-                <TracksTitle>Pistes</TracksTitle>
-                <TracksCount>{selectedTracks.length} piste{selectedTracks.length !== 1 ? 's' : ''}</TracksCount>
-              </TracksHeader>
-
-              <SelectWrapper ref={tracksWrapperRef} className="tracks-select-wrapper">
-                <Input
-                  type="text"
-                  value={trackSearch}
-                  onChange={handleTrackSearch}
-                  onFocus={() => setShowTracksList(true)}
-                  placeholder={selectedArtist ? "Rechercher des pistes..." : "Sélectionnez d'abord un artiste"}
-                  disabled={!selectedArtist}
-                />
-                {showTracksList && selectedArtist && (
-                  <DropdownList>
-                    {filteredTracks.map(track => (
-                      <DropdownItem
-                        key={track.id}
-                        onClick={() => toggleTrack(track)}
-                        className={selectedTracks.some(t => t.id === track.id) ? 'selected' : ''}
-                      >
-                        {track.title}
-                        {selectedTracks.some(t => t.id === track.id) && (
-                          <span style={{ marginLeft: 'auto' }}>✓</span>
-                        )}
-                      </DropdownItem>
-                    ))}
-                    {filteredTracks.length === 0 && (
-                      <DropdownItem className="disabled">
-                        Aucune piste trouvée
-                      </DropdownItem>
-                    )}
-                  </DropdownList>
-                )}
-              </SelectWrapper>
-
-              <TracksList>
-                {selectedTracks.length > 0 ? (
-                  <SelectedTracksContainer>
-                    <TracksTable>
-                      <thead>
-                        <tr>
-                          <TracksTableHeader style={{ width: '40px' }}>#</TracksTableHeader>
-                          <TracksTableHeader>Titre</TracksTableHeader>
-                          <TracksTableHeader style={{ width: '40px' }}></TracksTableHeader>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {selectedTracks.map((track, index) => (
-                          <TracksTableRow key={track.id}>
-                            <TracksTableCell>{index + 1}</TracksTableCell>
-                            <TracksTableCell>{track.title}</TracksTableCell>
-                            <TracksTableCell>
-                              <DeleteButton type="button" onClick={() => toggleTrack(track)}>
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                  <path d="M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                  <path d="M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                </svg>
-                              </DeleteButton>
-                            </TracksTableCell>
-                          </TracksTableRow>
-                        ))}
-                      </tbody>
-                    </TracksTable>
-                  </SelectedTracksContainer>
-                ) : (
-                  <div style={{ color: '#b3b3b3', textAlign: 'center', padding: '2rem' }}>
-                    Aucune piste sélectionnée
-                  </div>
-                )}
-              </TracksList>
-            </TracksSection>
+            {(album || (!album && formData.artistId)) && (
+              <TrackManager
+                albumId={album?.id}
+                artistId={formData.artistId}
+                onTracksChange={handleTracksChange}
+              />
+            )}
           </ContentLayout>
         </form>
       </ModalContent>

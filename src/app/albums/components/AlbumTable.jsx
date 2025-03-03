@@ -92,7 +92,6 @@ export default function AlbumTable({ albums, onEdit, onDelete }) {
             <DesktopCell as="th">Genre</DesktopCell>
             <DesktopCell as="th">Date de sortie</DesktopCell>
             <DesktopCell as="th">Type</DesktopCell>
-            <MainCell as="th">Pistes</MainCell>
             <MainCell as="th" style={{ width: '100px' }}>Actions</MainCell>
           </tr>
         </thead>
@@ -123,7 +122,6 @@ export default function AlbumTable({ albums, onEdit, onDelete }) {
               <DesktopCell>{formatGenres(album.genres)}</DesktopCell>
               <DesktopCell>{formatDate(album.releaseDate)}</DesktopCell>
               <DesktopCell>{album.type}</DesktopCell>
-              <MainCell>{album.trackCount}</MainCell>
               <MainCell>
                 <ActionButtons>
                   <ActionButton onClick={() => onEdit(album)} title="Modifier">

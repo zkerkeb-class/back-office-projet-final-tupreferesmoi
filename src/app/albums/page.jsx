@@ -8,6 +8,9 @@ import AlbumTable from './components/AlbumTable';
 import AlbumModal from './components/AlbumModal';
 import * as api from './utils/api';
 import Pagination from './components/Pagination';
+import CreateAlbumModal from './components/CreateAlbumModal';
+import EditAlbumModal from './components/EditAlbumModal';
+import { createAlbum, updateAlbum } from './utils/albumActions';
 
 export default function AlbumsPage() {
   const { user, loading } = useAuth();
@@ -15,7 +18,8 @@ export default function AlbumsPage() {
   const searchParams = useSearchParams();
   const [albums, setAlbums] = useState([]);
   const [selectedAlbum, setSelectedAlbum] = useState(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [error, setError] = useState('');
   const [totalPages, setTotalPages] = useState(1);
   const [totalAlbums, setTotalAlbums] = useState(0);
@@ -42,17 +46,19 @@ export default function AlbumsPage() {
     try {
       const data = await api.fetchWithAuth(`/api/albums?page=${currentPage}&limit=${itemsPerPage}`);
       
-      // Créer un tableau de promesses pour les appels détaillés
-      const detailPromises = data.data.map(album => 
-        api.fetchWithAuth(`/api/albums/${album.id}`)
-      );
+      const detailPromises = data.data.map(album => {
+        return Promise.all([
+          api.fetchWithAuth(`/api/albums/${album.id}`),
+          api.fetchWithAuth(`/api/albums/${album.id}/tracks`)
+        ]);
+      });
 
-      // Attendre toutes les réponses détaillées
       const detailedResults = await Promise.all(detailPromises);
 
-      // Formater les albums avec les données détaillées
       const formattedAlbums = data.data.map((album, index) => {
-        const detailedAlbum = detailedResults[index].data;
+        const [albumDetails, tracksDetails] = detailedResults[index];
+        const detailedAlbum = albumDetails.data;
+        
         return {
           id: album.id,
           title: album.title || 'Album Inconnu',
@@ -61,7 +67,8 @@ export default function AlbumsPage() {
           genres: detailedAlbum.genres || [],
           releaseDate: detailedAlbum.releaseDate,
           type: detailedAlbum.type || 'album',
-          trackCount: detailedAlbum.trackCount || 0,
+          trackCount: Array.isArray(tracksDetails.data) ? tracksDetails.data.length : 0,
+          tracks: Array.isArray(tracksDetails.data) ? tracksDetails.data : [],
           coverImage: {
             thumbnail: album.coverUrl || null,
             medium: album.coverUrl || null,
@@ -75,6 +82,7 @@ export default function AlbumsPage() {
       setTotalAlbums(data.pagination?.totalItems || 0);
       setError('');
     } catch (error) {
+      console.error('Erreur dans fetchAlbums:', error);
       setError(error.message);
       if (error.message === 'Non authentifié') router.push('/login');
     }
@@ -82,7 +90,11 @@ export default function AlbumsPage() {
 
   const handleEdit = (album) => {
     setSelectedAlbum(album);
-    setIsModalOpen(true);
+    setIsEditModalOpen(true);
+  };
+
+  const handleCreate = () => {
+    setIsCreateModalOpen(true);
   };
 
   const handleDelete = async (id) => {
@@ -115,54 +127,23 @@ export default function AlbumsPage() {
 
   const handleSubmit = async (albumData) => {
     try {
-      // Vérifier que tous les champs requis sont présents
-      if (!albumData.title || !albumData.releaseDate || !albumData.type || !albumData.artistId) {
-        throw new Error('Tous les champs requis doivent être remplis');
-      }
-
-      // Formater les données pour l'API
-      const formattedData = {
-        title: albumData.title.trim(),
-        genres: Array.isArray(albumData.genres) ? albumData.genres : albumData.genres.split(',').map(g => g.trim()).filter(Boolean),
-        releaseDate: new Date(albumData.releaseDate).toISOString(),
-        type: albumData.type,
-        artistId: albumData.artistId,
-        coverImage: albumData.coverImage ? {
-          thumbnail: albumData.coverImage,
-          medium: albumData.coverImage,
-          large: albumData.coverImage
-        } : undefined
-      };
-
-      console.log('Données formatées envoyées au serveur:', formattedData);
-
       let response;
+      
       if (selectedAlbum) {
-        // Mise à jour
-        response = await api.fetchWithAuth(`/api/albums/${selectedAlbum.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(formattedData)
-        });
+        response = await updateAlbum(selectedAlbum.id, albumData);
       } else {
-        // Création
-        response = await api.fetchWithAuth('/api/albums', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(formattedData)
-        });
+        response = await createAlbum(albumData);
       }
 
       if (response.success) {
-        await fetchAlbums(); // Recharger tous les albums
-        setIsModalOpen(false);
+        await fetchAlbums();
+        setIsCreateModalOpen(false);
+        setIsEditModalOpen(false);
         setSelectedAlbum(null);
         setError('');
-      } else {
-        throw new Error(response.message || 'La mise à jour n\'a pas retourné les données attendues');
       }
     } catch (error) {
-      console.error('Erreur complète:', error);
+      console.error('Erreur lors de la soumission:', error);
       setError(error.message || 'Une erreur est survenue lors de la création/modification de l\'album');
     }
   };
@@ -174,10 +155,7 @@ export default function AlbumsPage() {
     <Container>
       <Header>
         <Title>Albums ({totalAlbums})</Title>
-        <Button onClick={() => {
-          setSelectedAlbum(null);
-          setIsModalOpen(true);
-        }}>
+        <Button onClick={handleCreate}>
           Nouvel album
         </Button>
       </Header>
@@ -196,10 +174,16 @@ export default function AlbumsPage() {
         onPageChange={updatePageInUrl}
       />
 
-      <AlbumModal
-        isOpen={isModalOpen}
+      <CreateAlbumModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSubmit={handleSubmit}
+      />
+
+      <EditAlbumModal
+        isOpen={isEditModalOpen}
         onClose={() => {
-          setIsModalOpen(false);
+          setIsEditModalOpen(false);
           setSelectedAlbum(null);
         }}
         onSubmit={handleSubmit}
