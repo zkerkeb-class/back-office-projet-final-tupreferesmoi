@@ -31,12 +31,26 @@ export default function EditTrackManager({ albumId, artistId, initialTracks = []
   const [artistTracks, setArtistTracks] = useState([]);
   const [pendingTrackUpdate, setPendingTrackUpdate] = useState(null);
 
-  // Initialisation des pistes de l'album
-  useEffect(() => {
-    if (Array.isArray(initialTracks)) {
-      setAlbumTracks(initialTracks);
+  // Chargement des pistes de l'album
+  const loadAlbumTracks = async () => {
+    try {
+      const response = await api.getAvailableTracksForAlbum(albumId);
+      if (response.success) {
+        // Filtrer les pistes qui sont déjà dans l'album
+        const albumTracks = response.data.filter(track => track.isInAlbum);
+        setAlbumTracks(albumTracks);
+      }
+    } catch (error) {
+      console.error("Erreur lors du chargement des pistes de l'album:", error);
     }
-  }, []);
+  };
+
+  // Effet pour charger les pistes de l'album au montage
+  useEffect(() => {
+    if (albumId) {
+      loadAlbumTracks();
+    }
+  }, [albumId]);
 
   // Effet pour charger les pistes de l'artiste
   useEffect(() => {
