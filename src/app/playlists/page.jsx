@@ -74,7 +74,7 @@ export default function PlaylistsPage() {
         if (!window.confirm('Êtes-vous sûr de vouloir supprimer cette playlist ?')) return;
 
         try {
-            const response = await fetch(`/api/playlists/${id}`, {
+            const response = await fetch(`/api/playlists/${id}/admin`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${getAuthToken()}`
@@ -82,7 +82,9 @@ export default function PlaylistsPage() {
             });
 
             if (!response.ok) {
-                throw new Error('Erreur lors de la suppression de la playlist');
+                const data = await response.text();
+                const errorMessage = data ? JSON.parse(data).message : 'Erreur lors de la suppression de la playlist';
+                throw new Error(errorMessage);
             }
 
             await fetchPlaylists();
