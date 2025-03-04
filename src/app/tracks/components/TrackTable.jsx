@@ -46,15 +46,15 @@ export default function TrackTable({ tracks, onEdit, onDelete }) {
                 <div className="track-info">
                   <div className="track-title">{track.title}</div>
                   <div className="track-details show-mobile">
-                    {track.artist} • {track.album}
+                    {(track.artist?.name || 'Artiste Inconnu')} • {track.album?.title || 'Album Inconnu'}
                   </div>
                   <div className="track-details show-mobile">
                     {track.genres?.join(', ') || 'Aucun genre'}
                   </div>
                 </div>
               </Td>
-              <Td className="hide-mobile">{track.album}</Td>
-              <Td className="hide-mobile">{track.artist}</Td>
+              <Td className="hide-mobile">{track.album?.title || 'Album Inconnu'}</Td>
+              <Td className="hide-mobile">{track.artist?.name || 'Artiste Inconnu'}</Td>
               <Td className="hide-mobile">{track.genres?.join(', ') || 'Aucun genre'}</Td>
               <Td className="duration">{formatDuration(track.duration)}</Td>
               <Td className="hide-mobile">

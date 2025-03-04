@@ -159,7 +159,7 @@ const TrackModal = ({ isOpen, onClose, onSubmit, track }) => {
     albumId: '',
     albumTitle: '',
     audioFile: null,
-    genres: ''
+    genres: []
   });
   const [error, setError] = useState('');
   const [artistSearch, setArtistSearch] = useState('');
@@ -182,7 +182,7 @@ const TrackModal = ({ isOpen, onClose, onSubmit, track }) => {
         artistName: track.artist || '',
         albumId: track.albumId || '',
         albumTitle: track.album || '',
-        genres: Array.isArray(track.genres) ? track.genres.join(', ') : ''
+        genres: track.genres || []
       });
       setArtistSearch(track.artist || '');
       setAlbumSearch(track.album || '');
@@ -206,7 +206,7 @@ const TrackModal = ({ isOpen, onClose, onSubmit, track }) => {
         albumId: '',
         albumTitle: '',
         audioFile: null,
-        genres: ''
+        genres: []
       });
       setArtistSearch('');
       setAlbumSearch('');
@@ -307,6 +307,14 @@ const TrackModal = ({ isOpen, onClose, onSubmit, track }) => {
     setShowAlbumList(false);
   };
 
+  const handleGenresChange = (e) => {
+    const genresArray = e.target.value.split(',').map(genre => genre.trim()).filter(genre => genre !== '');
+    setFormData(prev => ({
+      ...prev,
+      genres: genresArray
+    }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.title.trim()) {
@@ -390,8 +398,6 @@ const TrackModal = ({ isOpen, onClose, onSubmit, track }) => {
         artistId: artistId,
         albumId: albumId,
         genres: formData.genres
-          ? formData.genres.split(',').map(g => g.trim()).filter(Boolean)
-          : []
       };
 
       // Ajouter audioUrl et duration seulement en création
@@ -511,12 +517,13 @@ const TrackModal = ({ isOpen, onClose, onSubmit, track }) => {
           )}
 
           <FormGroup>
-            <Label>Genres (séparés par des virgules)</Label>
+            <Label htmlFor="genres">Genres (séparés par des virgules)</Label>
             <Input
               type="text"
-              value={formData.genres}
-              onChange={e => setFormData(prev => ({ ...prev, genres: e.target.value }))}
-              placeholder="Rock, Pop, Jazz..."
+              id="genres"
+              value={Array.isArray(formData.genres) ? formData.genres.join(', ') : ''}
+              onChange={handleGenresChange}
+              placeholder="Pop, Rock, Jazz..."
             />
           </FormGroup>
 

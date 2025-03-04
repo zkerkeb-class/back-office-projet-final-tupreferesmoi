@@ -44,12 +44,8 @@ export default function TracksPage() {
       const response = await api.fetchWithAuth(`/api/tracks?page=${currentPage}&limit=${itemsPerPage}`);
       
       const formattedTracks = response.data.map(track => ({
-        id: track.id,
-        title: track.title || 'Piste Inconnue',
-        album: track.album?.title || 'Album Inconnu',
-        artist: track.artist || 'Artiste Inconnu',
-        duration: track.duration || 0,
-        audioUrl: track.audioUrl || null
+        ...track,
+        artist: typeof track.artist === 'string' ? { name: track.artist } : track.artist || { name: 'Artiste Inconnu' }
       }));
       
       setTracks(formattedTracks);
@@ -57,6 +53,7 @@ export default function TracksPage() {
       setTotalPages(response.pagination?.totalPages || 1);
       setError('');
     } catch (error) {
+      console.error("Error fetching tracks:", error);
       setError(error.message);
       if (error.message === 'Non authentifié') router.push('/login');
     }

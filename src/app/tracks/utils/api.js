@@ -123,5 +123,6 @@ export const formatTrackData = (track) => ({
   duration: track.duration || 0,
   trackNumber: track.trackNumber || 1,
   audioUrl: track.audioUrl || null,
-  featuring: Array.isArray(track.featuring) ? track.featuring : []
+  featuring: Array.isArray(track.featuring) ? track.featuring : [],
+  genres: Array.isArray(track.genres) ? track.genres : []
 }); 
