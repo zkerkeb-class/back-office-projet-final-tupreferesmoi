@@ -134,23 +134,21 @@ export default function TrackSearch({ playlistId, initialTracks = [], onTracksCh
   };
 
   const loadArtists = async (tracks) => {
-    console.log('Loading artists for tracks:', tracks);
     const artistIds = [...new Set(tracks.map(track => 
       typeof track.artistId === 'object' ? track.artistId._id : track.artistId
-    ))];
-    console.log('Artist IDs:', artistIds);
+    ))].filter(id => !artists[id] && id);
+
+    if (artistIds.length === 0) return;
+
     const newArtists = { ...artists };
-    
     for (const artistId of artistIds) {
-      if (!newArtists[artistId]) {
-        const artist = await fetchArtist(artistId);
-        if (artist) {
-          newArtists[artistId] = artist;
-        }
+      const artist = await fetchArtist(artistId);
+      if (artist) {
+        newArtists[artistId] = artist;
       }
     }
     
-    setArtists(newArtists);
+    setArtists(prev => ({ ...prev, ...newArtists }));
   };
 
   useEffect(() => {
@@ -183,18 +181,8 @@ export default function TrackSearch({ playlistId, initialTracks = [], onTracksCh
   }, [debouncedSearchTerm]);
 
   useEffect(() => {
-    console.log('Initial tracks:', initialTracks);
-    setSelectedTracks(initialTracks);
-  }, [initialTracks]);
-
-  useEffect(() => {
-    if (searchResults.length > 0) {
-      loadArtists(searchResults);
-    }
-  }, [searchResults]);
-
-  useEffect(() => {
-    if (initialTracks.length > 0) {
+    if (initialTracks && initialTracks.length > 0) {
+      setSelectedTracks(initialTracks);
       loadArtists(initialTracks);
     }
   }, [initialTracks]);
@@ -202,16 +190,13 @@ export default function TrackSearch({ playlistId, initialTracks = [], onTracksCh
   const handleTrackToggle = (track) => {
     setSelectedTracks(prev => {
       const isSelected = prev.some(t => t._id === track._id);
-      return isSelected
+      const newTracks = isSelected
         ? prev.filter(t => t._id !== track._id)
         : [...prev, track];
+      onTracksChange(newTracks.map(t => t._id));
+      return newTracks;
     });
   };
-
-  useEffect(() => {
-    onTracksChange(selectedTracks.map(t => t._id));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedTracks]);
 
   const isTrackSelected = (trackId) => {
     return selectedTracks.some(track => track._id === trackId);
@@ -223,6 +208,17 @@ export default function TrackSearch({ playlistId, initialTracks = [], onTracksCh
     }
     return artists[artistId]?.name || 'Artiste inconnu';
   };
+
+  useEffect(() => {
+    if (searchResults.length > 0) {
+      const newTracks = searchResults.filter(track => 
+        track.artistId && !artists[typeof track.artistId === 'object' ? track.artistId._id : track.artistId]
+      );
+      if (newTracks.length > 0) {
+        loadArtists(newTracks);
+      }
+    }
+  }, [searchResults, artists]);
 
   return (
     <SearchContainer>

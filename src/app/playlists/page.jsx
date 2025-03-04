@@ -20,6 +20,12 @@ export default function PlaylistsPage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const itemsPerPage = 10;
 
+    const getAuthToken = () => {
+        const cookie = document.cookie.split(';').find(c => c.trim().startsWith('token='));
+        if (!cookie) return null;
+        return cookie.split('=')[1];
+    };
+
     const currentPage = parseInt(searchParams.get('page') || '1');
 
     const updatePageInUrl = (newPage) => {
@@ -64,19 +70,31 @@ export default function PlaylistsPage() {
         }
     };
 
-    const handleEdit = (playlist) => {
-        setSelectedPlaylist(playlist);
-        setIsModalOpen(true);
-    };
+    const handleDelete = async (id) => {
+        if (!window.confirm('Êtes-vous sûr de vouloir supprimer cette playlist ?')) return;
 
-    const handleModalClose = () => {
-        setSelectedPlaylist(null);
-        setIsModalOpen(false);
+        try {
+            const response = await fetch(`/api/playlists/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${getAuthToken()}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Erreur lors de la suppression de la playlist');
+            }
+
+            await fetchPlaylists();
+            setError('');
+        } catch (error) {
+            setError(error.message || "Erreur lors de la suppression de la playlist");
+        }
     };
 
     const handlePlaylistUpdate = async (formData) => {
         try {
-            const token = localStorage.getItem('token');
+            const token = getAuthToken();
             if (!token) {
                 throw new Error('Non authentifié');
             }
@@ -96,8 +114,9 @@ export default function PlaylistsPage() {
                     'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({
+                    _id: selectedPlaylist.id,
                     name: formData.name,
-                    tracks: formData.trackIds
+                    tracks: formData.trackIds.map(id => ({ _id: id }))
                 })
             });
 
@@ -120,26 +139,43 @@ export default function PlaylistsPage() {
         }
     };
 
-    const handleDelete = async (id) => {
-        if (!window.confirm('Êtes-vous sûr de vouloir supprimer cette playlist ?')) return;
-
+    const handleEdit = async (playlist) => {
         try {
-            const response = await fetch(`/api/playlists/${id}`, {
-                method: 'DELETE',
+            const token = getAuthToken();
+            if (!token) {
+                throw new Error('Non authentifié');
+            }
+
+            const response = await fetch(`/api/playlists/${playlist.id}`, {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Authorization': `Bearer ${token}`
                 }
             });
 
             if (!response.ok) {
-                throw new Error('Erreur lors de la suppression de la playlist');
+                throw new Error('Erreur lors de la récupération des détails de la playlist');
             }
 
-            await fetchPlaylists();
-            setError('');
+            const data = await response.json();
+            const fullPlaylist = {
+                id: data.data._id,
+                name: data.data.name,
+                creator: data.data.userId?.username || 'Utilisateur inconnu',
+                totalTracks: data.data.totalTracks || 0,
+                tracks: data.data.tracks || []
+            };
+
+            setSelectedPlaylist(fullPlaylist);
+            setIsModalOpen(true);
         } catch (error) {
-            setError(error.message || "Erreur lors de la suppression de la playlist");
+            console.error('Erreur lors de la récupération des détails:', error);
+            setError(error.message);
         }
+    };
+
+    const handleModalClose = () => {
+        setSelectedPlaylist(null);
+        setIsModalOpen(false);
     };
 
     if (loading) return <Container>Chargement...</Container>;
