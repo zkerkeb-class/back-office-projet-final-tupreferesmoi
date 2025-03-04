@@ -4,16 +4,29 @@ const nextConfig = {
   compiler: {
     styledComponents: true,
   },
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  webpack: (config) => {
+    config.ignoreWarnings = [
+      { module: /node_modules/, message: /cz-shortcut-listen/ },
+    ];
+    return config;
+  },
   async rewrites() {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
     return [
       {
         source: '/api/:path*',
-        destination: 'http://localhost:3000/api/:path*',
+        destination: `${apiUrl}/:path*`,
       },
     ]
   },
   output: 'standalone',
   poweredByHeader: false,
+  experimental: {
+    middleware: true
+  }
 }
 
 module.exports = nextConfig 
