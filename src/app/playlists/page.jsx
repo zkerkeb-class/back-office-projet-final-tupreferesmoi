@@ -188,6 +188,38 @@ export default function PlaylistsPage() {
         setIsModalOpen(false);
     };
 
+    const handleCreate = async () => {
+        try {
+            const token = getAuthToken();
+            if (!token) {
+                throw new Error('Non authentifié');
+            }
+
+            const response = await fetch('/api/playlists', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    name: 'Nouvelle Playlist',
+                    isPublic: true,
+                    tracks: []
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error('Erreur lors de la création de la playlist');
+            }
+
+            await fetchPlaylists();
+            setError('');
+        } catch (error) {
+            console.error('Erreur de création:', error);
+            setError(error.message);
+        }
+    };
+
     if (loading) return <Container>Chargement...</Container>;
     if (!user) return null;
 
@@ -195,6 +227,9 @@ export default function PlaylistsPage() {
         <Container>
             <Header>
                 <Title>Playlists ({totalPlaylists})</Title>
+                <Button onClick={handleCreate}>
+                    Nouvelle Playlist
+                </Button>
             </Header>
 
             {error && <ErrorMessage>{error}</ErrorMessage>}

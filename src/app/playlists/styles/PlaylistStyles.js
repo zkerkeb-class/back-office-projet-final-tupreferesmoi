@@ -60,16 +60,24 @@ export const Title = styled.h1`
 `;
 
 export const Button = styled.button`
-  background-color: #1db954;
+  background: #1DB954;
   color: white;
   border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border-radius: 500px;
   cursor: pointer;
   font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 
   &:hover {
     background-color: #1ed760;
+  }
+
+  &:active {
+    background-color: #1aa34a;
+    transform: scale(0.98);
   }
 `;
 
