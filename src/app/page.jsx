@@ -298,16 +298,6 @@ export default function Home() {
     <Container>
       <Header>
         <Title>Tableau de bord</Title>
-        <ButtonGroup>
-          <Button $primary>
-            <span style={{ marginRight: '0.5rem' }}>+</span>
-            Nouvel artiste
-          </Button>
-          <Button>
-            <span style={{ marginRight: '0.5rem' }}>+</span>
-            Nouvel album
-          </Button>
-        </ButtonGroup>
       </Header>
 
       <Grid>
@@ -330,7 +320,6 @@ export default function Home() {
       <StatsSection>
         <StatsHeader>
           <StatsTitle>Statistiques rapides</StatsTitle>
-          <Button>Voir plus</Button>
         </StatsHeader>
 
         <StatsGrid>

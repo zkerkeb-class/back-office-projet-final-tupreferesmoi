@@ -39,22 +39,17 @@ export default function ArtistsPage() {
   }, [user, loading, currentPage]);
 
   const fetchArtists = async (page = currentPage) => {
-    console.log('fetchArtists - Début de la récupération');
     try {
       const data = await api.fetchWithAuth(`/api/artists?page=${page}&limit=${itemsPerPage}`);
-      console.log('fetchArtists - Données reçues:', data);
       
       const formattedArtists = data.data.map(api.formatArtistData);
-      console.log('fetchArtists - Données formatées:', formattedArtists);
       
       setArtists(formattedArtists);
       setTotalPages(Math.ceil(data.pagination?.totalItems / itemsPerPage) || 1);
       setTotalArtists(data.pagination?.totalItems || 0);
       setError('');
       
-      console.log('fetchArtists - État mis à jour avec:', formattedArtists);
     } catch (error) {
-      console.error('fetchArtists - Erreur:', error);
       setError(error.message);
       if (error.message === 'Non authentifié') router.push('/login');
     }
@@ -78,7 +73,6 @@ export default function ArtistsPage() {
       // Rafraîchir la liste pour la page actuelle
       fetchArtists(currentPage);
     } catch (error) {
-      console.error('Erreur lors de la suppression:', error);
       setError(error.message || "Erreur lors de la suppression de l'artiste");
       // Rafraîchir la liste même en cas d'erreur pour s'assurer de la cohérence
       fetchArtists(currentPage);
@@ -128,7 +122,6 @@ export default function ArtistsPage() {
         }
       }
     } catch (error) {
-      console.error('Erreur lors de l\'opération:', error);
       setError(error.message || "Une erreur est survenue");
     }
   };

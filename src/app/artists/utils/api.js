@@ -24,13 +24,6 @@ export const fetchWithAuth = async (endpoint, options = {}) => {
   const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
   const fullUrl = endpoint.startsWith('/api') ? `${baseUrl}${endpoint.substring(4)}` : `${baseUrl}${endpoint}`;
 
-  // Log complet de la requête
-  console.log('Request Details:', {
-    url: fullUrl,
-    method: options.method,
-    token: token,
-    endpoint: endpoint
-  });
 
   const response = await fetch(fullUrl, {
     ...options,
