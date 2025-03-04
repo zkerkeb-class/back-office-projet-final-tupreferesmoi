@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useDebounce } from 'use-debounce';
 import styled from 'styled-components';
 
@@ -108,16 +108,17 @@ export default function TrackSearch({ playlistId, initialTracks = [], onTracksCh
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm] = useDebounce(searchTerm, 300);
   const [searchResults, setSearchResults] = useState([]);
-  const [selectedTracks, setSelectedTracks] = useState(initialTracks);
+  const [selectedTracks, setSelectedTracks] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [artists, setArtists] = useState({});
 
-  const fetchArtist = async (artistId) => {
-    if (!artistId || typeof artistId !== 'string') {
-      console.log('Invalid artistId:', artistId);
-      return null;
-    }
+  // Initialisation unique des pistes sélectionnées
+  useEffect(() => {
+    setSelectedTracks(initialTracks);
+  }, []);
 
+  const fetchArtist = async (artistId) => {
+    if (!artistId || typeof artistId !== 'string') return null;
     try {
       const response = await fetch(`/api/artists/${artistId}`, {
         headers: {
@@ -134,24 +135,33 @@ export default function TrackSearch({ playlistId, initialTracks = [], onTracksCh
   };
 
   const loadArtists = async (tracks) => {
-    const artistIds = [...new Set(tracks.map(track => 
-      typeof track.artistId === 'object' ? track.artistId._id : track.artistId
-    ))].filter(id => !artists[id] && id);
-
-    if (artistIds.length === 0) return;
-
-    const newArtists = { ...artists };
-    for (const artistId of artistIds) {
-      const artist = await fetchArtist(artistId);
-      if (artist) {
-        newArtists[artistId] = artist;
-      }
-    }
+    if (!tracks?.length) return;
     
-    setArtists(prev => ({ ...prev, ...newArtists }));
+    const artistIds = tracks
+      .map(track => typeof track.artistId === 'object' ? track.artistId._id : track.artistId)
+      .filter((id, index, self) => id && !artists[id] && self.indexOf(id) === index);
+
+    if (!artistIds.length) return;
+
+    const newArtists = {};
+    await Promise.all(
+      artistIds.map(async (artistId) => {
+        const artist = await fetchArtist(artistId);
+        if (artist) {
+          newArtists[artistId] = artist;
+        }
+      })
+    );
+
+    if (Object.keys(newArtists).length > 0) {
+      setArtists(prev => ({ ...prev, ...newArtists }));
+    }
   };
 
+  // Recherche de pistes
   useEffect(() => {
+    let isMounted = true;
+
     const searchTracks = async () => {
       if (debouncedSearchTerm.length < 2) {
         setSearchResults([]);
@@ -167,36 +177,44 @@ export default function TrackSearch({ playlistId, initialTracks = [], onTracksCh
         });
         if (!response.ok) throw new Error('Erreur lors de la recherche');
         const data = await response.json();
-        console.log('Search results:', data.data?.tracks);
-        setSearchResults(data.data?.tracks || []);
+        if (isMounted) {
+          const tracks = data.data?.tracks || [];
+          setSearchResults(tracks);
+          loadArtists(tracks);
+        }
       } catch (error) {
         console.error('Erreur de recherche:', error);
-        setSearchResults([]);
+        if (isMounted) {
+          setSearchResults([]);
+        }
       } finally {
-        setIsLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     };
 
     searchTracks();
+    return () => {
+      isMounted = false;
+    };
   }, [debouncedSearchTerm]);
 
-  useEffect(() => {
-    if (initialTracks && initialTracks.length > 0) {
-      setSelectedTracks(initialTracks);
-      loadArtists(initialTracks);
-    }
-  }, [initialTracks]);
-
-  const handleTrackToggle = (track) => {
+  const handleTrackToggle = useCallback((track) => {
     setSelectedTracks(prev => {
       const isSelected = prev.some(t => t._id === track._id);
       const newTracks = isSelected
         ? prev.filter(t => t._id !== track._id)
         : [...prev, track];
-      onTracksChange(newTracks.map(t => t._id));
+      
+      // Déplacer l'appel à onTracksChange dans un setTimeout pour éviter les mises à jour pendant le rendu
+      setTimeout(() => {
+        onTracksChange(newTracks.map(t => t._id));
+      }, 0);
+      
       return newTracks;
     });
-  };
+  }, [onTracksChange]);
 
   const isTrackSelected = (trackId) => {
     return selectedTracks.some(track => track._id === trackId);
@@ -208,17 +226,6 @@ export default function TrackSearch({ playlistId, initialTracks = [], onTracksCh
     }
     return artists[artistId]?.name || 'Artiste inconnu';
   };
-
-  useEffect(() => {
-    if (searchResults.length > 0) {
-      const newTracks = searchResults.filter(track => 
-        track.artistId && !artists[typeof track.artistId === 'object' ? track.artistId._id : track.artistId]
-      );
-      if (newTracks.length > 0) {
-        loadArtists(newTracks);
-      }
-    }
-  }, [searchResults, artists]);
 
   return (
     <SearchContainer>

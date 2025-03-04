@@ -107,18 +107,26 @@ export default function PlaylistsPage() {
                 throw new Error('ID de playlist invalide');
             }
 
-            const response = await fetch(`/api/playlists/${selectedPlaylist.id}`, {
+            const requestBody = {
+                name: formData.name,
+                tracks: formData.trackIds
+            };
+
+            console.log('Request body:', requestBody);
+            console.log('Request URL:', `/api/playlists/${selectedPlaylist.id}/admin`);
+
+            const response = await fetch(`/api/playlists/${selectedPlaylist.id}/admin`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify({
-                    _id: selectedPlaylist.id,
-                    name: formData.name,
-                    tracks: formData.trackIds.map(id => ({ _id: id }))
-                })
+                body: JSON.stringify(requestBody)
             });
+
+            console.log('Response status:', response.status);
+            const responseData = await response.text();
+            console.log('Response data:', responseData);
 
             if (!response.ok) {
                 if (response.status === 401) {
@@ -127,8 +135,8 @@ export default function PlaylistsPage() {
                 if (response.status === 404) {
                     throw new Error('Playlist non trouvée');
                 }
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.message || 'Erreur lors de la mise à jour de la playlist');
+                const errorMessage = responseData ? JSON.parse(responseData).message : 'Erreur lors de la mise à jour de la playlist';
+                throw new Error(errorMessage);
             }
 
             await fetchPlaylists();
