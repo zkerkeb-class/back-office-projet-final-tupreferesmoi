@@ -202,6 +202,7 @@ const UserModal = ({ isOpen, onClose, onSubmit, user }) => {
               value={formData.role}>
               <option value="">--Choissisez une option--</option>
               <option value="admin">Administrateur</option>
+              <option value="content-admin">Administrateur de contenu</option>
               <option value="moderator">Modérateur</option>
               <option value="catalog-manager">Gestionnaire Catalogue</option>
               <option value="user">Utilisateur(Client)</option>

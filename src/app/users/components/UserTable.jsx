@@ -21,6 +21,10 @@ export default function UserTable({ users, onEdit, onDelete }) {
         role = "administrateur";
         break;
         
+      case "content-admin":
+        role = "administrateur de contenu";
+        break;
+        
       case "catalog-manager":
         role = "Gestionnaire de catalogue";
         break;

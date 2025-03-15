@@ -5,6 +5,7 @@ import styled from 'styled-components'
 import { useAuth } from '../utils/AuthContext'
 import { usePathname } from 'next/navigation'
 
+
 const Nav = styled.nav`
   position: fixed;
   top: 0;
@@ -79,9 +80,17 @@ const LogoutButton = styled.button`
   }
 `;
 
+
 export default function Navigation() {
   const { user, logout } = useAuth();
   const pathname = usePathname();
+
+  const checkRole = () => {
+    if(user.role == "moderator"){
+      return window.location.href += '/users'
+
+    }
+  }
   
   if (pathname === '/login') return null;
   
@@ -100,7 +109,7 @@ export default function Navigation() {
               <NavLink href="/albums">Albums</NavLink>
               <NavLink href="/tracks">Sons</NavLink>
               <NavLink href="/playlists">Playlists</NavLink>
-              <NavLink href="/users">Utlisateurs</NavLink>
+              <NavLink onClick={checkRole} href="">Utlisateurs</NavLink>
               <LogoutButton onClick={logout}>
                 Déconnexion
               </LogoutButton>

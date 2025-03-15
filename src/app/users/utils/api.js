@@ -46,13 +46,5 @@ export const extractBaseUrl = (signedUrl) => {
     }
     return data;
   };
- 
+
   
-  export const formatUserData = (user) => ({
-    id: user.id || user._id,
-    username: user.username,
-    email: user.email,
-    role: user.role,
-    privacySettings: user.privacySettings ,
-    accountType: user.accountType,
-  }); 

@@ -35,13 +35,21 @@ export default function UsersPage() {
       router.push('/login');
       return;
     }
+    console.log(user)
     if (user) fetchUsers(currentPage);
   }, [user, loading, currentPage]);
 
 
   const fetchUsers = async (page = currentPage) => {
     try {
-      const data = await api.fetchWithAuth(`/api/users?page=${page}&limit=${itemsPerPage}`);
+      const data = await api.fetchWithAuth(`/api/users/`, 
+        {
+          method : "GET",
+          headers : {
+            scope : "Users",
+            currentUserId : `${localStorage.getItem("currentUserId")}`,            
+          }          
+        });
       
       const formattedUsers = data.map(api.formatUserData);
       // console.log(data);      
@@ -66,7 +74,11 @@ export default function UsersPage() {
     if (!window.confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ?')) return;
 
     try {
-      await api.fetchWithAuth(`/api/users/delete/${id}`, { method: 'DELETE' });
+      await api.fetchWithAuth(`/api/users/delete/${id}`, 
+        { 
+          method: 'DELETE',
+          scope : 'Users'
+        });
       
       // Mettre à jour l'état local immédiatement
       setUsers(prevUsers => prevUsers.filter(user => user.id !== id));
@@ -98,8 +110,12 @@ export default function UsersPage() {
         };
         const response = await api.fetchWithAuth(`/api/users/profile/${selectedUser.id}`, {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(formattedData)
+          headers: { 
+              'Content-Type': 'application/json' ,
+              scope : "Users",
+              currentUserId: localStorage.getItem("currentUserId")
+             },
+          body: JSON.stringify(formattedData),
         });        
 
         if (response.email) { // on check l'email histoire de vérifier si l'objet n'est pas vide      
@@ -107,21 +123,7 @@ export default function UsersPage() {
           handleModalClose();
           fetchUsers(currentPage);
         }
-      } else {
-        // Mode création
-        const response = await api.fetchWithAuth('/api/users', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(userData)
-        });
-
-        if (response.success) {
-          setError('');
-          handleModalClose();
-          // Rediriger vers la première page pour voir le nouveau user
-          updatePageInUrl(1);
-        }
-      }
+      } 
     } catch (error) {
       setError(error.message || "Une erreur est survenue");
     }
@@ -134,6 +136,7 @@ export default function UsersPage() {
     <Container>
       <Header>
         <Title>Utilisateurs ({totalUsers})</Title>
+        <p> connecté en tant que :{user.username} ({user.role})</p>
       </Header>
 
       {error && <ErrorMessage>{error}</ErrorMessage>}
