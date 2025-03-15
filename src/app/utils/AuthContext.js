@@ -79,7 +79,7 @@ export const AuthProvider = ({ children }) => {
         throw new Error(data.message || 'Erreur de connexion');
       }
 
-      if (data.user && data.user.role === 'admin') {
+      if (data.user && data.user.role !== 'user') { //admin / catalog-manager / moderator
         setCookie('token', data.token, 7); // expire dans 7 jours
         setUser(data.user);
         router.push('/');

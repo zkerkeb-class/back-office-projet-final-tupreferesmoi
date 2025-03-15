@@ -100,6 +100,7 @@ export default function Navigation() {
               <NavLink href="/albums">Albums</NavLink>
               <NavLink href="/tracks">Sons</NavLink>
               <NavLink href="/playlists">Playlists</NavLink>
+              <NavLink href="/users">Utlisateurs</NavLink>
               <LogoutButton onClick={logout}>
                 Déconnexion
               </LogoutButton>
